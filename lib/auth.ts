@@ -6,6 +6,10 @@ import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
+if (!process.env.AUTH_SECRET) {
+  throw new Error("AUTH_SECRET environment variable is required")
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -47,10 +51,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   pages: {
     signIn: "/auth/login",
   },
+  debug: process.env.NODE_ENV === "development",
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

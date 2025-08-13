@@ -1,40 +1,31 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import { auth } from "@/lib/auth"
+import { NextResponse } from "next/server"
 
-export async function middleware(request: NextRequest) {
-  const session = await auth()
-  
-  // Check if the user is authenticated
-  const isAuthenticated = !!session?.user
-  
-  // Define public routes that don't require authentication
-  const publicRoutes = ["/auth/login", "/"]
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
-  
-  // Define protected routes that require authentication
-  const protectedRoutes = ["/home"]
-  const isProtectedRoute = protectedRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  )
-  
-  // If the user is not authenticated and trying to access a protected route
+export default auth((req) => {
+  const { nextUrl } = req
+  const isAuthenticated = !!req.auth?.user
+
+  const isAuthPage = nextUrl.pathname.startsWith("/auth")
+  const isProtectedRoute = nextUrl.pathname.startsWith("/home")
+  const isRootPath = nextUrl.pathname === "/"
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthenticated && isAuthPage) {
+    return NextResponse.redirect(new URL("/home", nextUrl))
+  }
+
+  // Redirect unauthenticated users from protected routes to login
   if (!isAuthenticated && isProtectedRoute) {
-    return NextResponse.redirect(new URL("/auth/login", request.url))
+    return NextResponse.redirect(new URL("/auth/login", nextUrl))
   }
-  
-  // If the user is authenticated and trying to access the login page
-  if (isAuthenticated && request.nextUrl.pathname === "/auth/login") {
-    return NextResponse.redirect(new URL("/home", request.url))
+
+  // Redirect authenticated users from root to home
+  if (isAuthenticated && isRootPath) {
+    return NextResponse.redirect(new URL("/home", nextUrl))
   }
-  
-  // If the user is authenticated and on the base route, redirect to home
-  if (isAuthenticated && request.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/home", request.url))
-  }
-  
+
   return NextResponse.next()
-}
+})
 
 export const config = {
   matcher: [
