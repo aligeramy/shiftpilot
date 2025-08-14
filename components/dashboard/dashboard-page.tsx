@@ -2,24 +2,21 @@
 
 import { ReactNode } from "react"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { DashboardHeader } from "./dashboard-header"
-import { generateBreadcrumbs } from "@/lib/utils/navigation"
+import { generateBreadcrumbs } from "@/lib/constants/navigation"
 
 interface DashboardPageProps {
   children: ReactNode
-  // Optional overrides
   customBreadcrumbs?: { label: string; href?: string }[]
-  userName?: string
-  userEmail?: string
 }
 
 export function DashboardPage({ 
   children, 
-  customBreadcrumbs,
-  userName,
-  userEmail 
+  customBreadcrumbs
 }: DashboardPageProps) {
   const pathname = usePathname()
+  const { data: session } = useSession()
   
   // Auto-generate breadcrumbs from current path if not provided
   const breadcrumbs = customBreadcrumbs || generateBreadcrumbs(pathname)
@@ -28,8 +25,8 @@ export function DashboardPage({
     <>
       <DashboardHeader 
         breadcrumbItems={breadcrumbs}
-        userName={userName}
-        userEmail={userEmail}
+        userName={session?.user?.name || undefined}
+        userEmail={session?.user?.email || undefined}
       />
       
       <div className="flex flex-1 flex-col gap-4 p-4">

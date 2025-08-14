@@ -27,15 +27,20 @@ export function NavMain({
   items: NavigationItem[]
 }) {
   const pathname = usePathname()
-  const { toggleExpanded, isItemExpanded, isUrlActive } = useNavigationStore()
+  const { expandedItems, toggleExpanded } = useNavigationStore()
+  const [isMounted, setIsMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   return (
     <SidebarGroup suppressHydrationWarning>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const isExpanded = isItemExpanded(item.title)
-          const isActive = isUrlActive(item.url) || item.items?.some(subItem => isUrlActive(subItem.url))
+          const isExpanded = isMounted ? (expandedItems[item.title] ?? false) : false
+          const isActive = pathname === item.url || item.items?.some(subItem => pathname === subItem.url)
           
           return (
             <Collapsible

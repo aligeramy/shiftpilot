@@ -6,12 +6,19 @@ interface NavigationState {
   expandedItems: Record<string, boolean>
   activeUrl: string
   
+  // Sidebar state
+  sidebarOpen: boolean
+  
   // Actions
   toggleExpanded: (itemTitle: string) => void
   setExpanded: (itemTitle: string, expanded: boolean) => void
   setActiveUrl: (url: string) => void
   isItemExpanded: (itemTitle: string) => boolean
   isUrlActive: (url: string) => boolean
+  
+  // Sidebar actions
+  setSidebarOpen: (open: boolean) => void
+  toggleSidebar: () => void
 }
 
 const DEFAULT_EXPANDED_ITEMS: Record<string, boolean> = {
@@ -23,6 +30,7 @@ export const useNavigationStore = create<NavigationState>()(
     (set, get) => ({
       expandedItems: DEFAULT_EXPANDED_ITEMS,
       activeUrl: '/home',
+      sidebarOpen: true, // Default to open
       
       toggleExpanded: (itemTitle: string) => {
         set((state) => ({
@@ -53,14 +61,23 @@ export const useNavigationStore = create<NavigationState>()(
       isUrlActive: (url: string) => {
         const activeUrl = get().activeUrl
         return activeUrl === url || activeUrl.startsWith(url + '/')
+      },
+      
+      setSidebarOpen: (open: boolean) => {
+        set({ sidebarOpen: open })
+      },
+      
+      toggleSidebar: () => {
+        set((state) => ({ sidebarOpen: !state.sidebarOpen }))
       }
     }),
     {
       name: 'navigation-store',
-      // Only persist the expanded states and active URL
+      // Persist sidebar state along with navigation state
       partialize: (state) => ({
         expandedItems: state.expandedItems,
-        activeUrl: state.activeUrl
+        activeUrl: state.activeUrl,
+        sidebarOpen: state.sidebarOpen
       })
     }
   )

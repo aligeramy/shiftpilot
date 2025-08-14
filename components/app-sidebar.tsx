@@ -11,7 +11,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { NAVIGATION_CONFIG } from "@/lib/constants"
+import { NAVIGATION_CONFIG } from "@/lib/constants/navigation"
 import type { User } from "@/lib/types/navigation"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {

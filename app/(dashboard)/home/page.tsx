@@ -1,10 +1,10 @@
-import { WithDashboardLayout } from "@/components/dashboard/with-dashboard-layout"
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { MainContentArea } from "@/components/dashboard/main-content-area"
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
-    <WithDashboardLayout
+    <DashboardPage
       customBreadcrumbs={[
         { label: "Dashboard", href: "/home" },
         { label: "Overview" }
@@ -12,6 +12,6 @@ export default async function HomePage() {
     >
       <StatsGrid />
       <MainContentArea />
-    </WithDashboardLayout>
+    </DashboardPage>
   )
 }

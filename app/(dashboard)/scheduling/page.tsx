@@ -1,8 +1,8 @@
-import { WithDashboardLayout } from "@/components/dashboard/with-dashboard-layout"
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { MainContentArea } from "@/components/dashboard/main-content-area"
 
-export default async function SchedulingPage() {
+export default function SchedulingPage() {
   const schedulingStats = {
     activeShifts: 28,
     staffOnline: 16,
@@ -10,12 +10,12 @@ export default async function SchedulingPage() {
   }
 
   return (
-    <WithDashboardLayout>
+    <DashboardPage>
       <StatsGrid stats={schedulingStats} />
       <MainContentArea 
         title="Scheduling Management"
         subtitle="Create and manage radiology shift schedules."
       />
-    </WithDashboardLayout>
+    </DashboardPage>
   )
 }

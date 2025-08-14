@@ -209,12 +209,32 @@ export const getNavItemByUrl = (url: string) => {
   )
 }
 
-export const getActiveNavItem = () => {
-  return NAVIGATION_CONFIG.navMain.find(item => item.isActive)
-}
+export const generateBreadcrumbs = (url: string) => {
+  const navItem = getNavItemByUrl(url)
+  if (!navItem) return []
 
-export const updateNavItemActive = (url: string) => {
-  NAVIGATION_CONFIG.navMain.forEach(item => {
-    item.isActive = item.url === url || item.items?.some(subItem => subItem.url === url)
-  })
+  const breadcrumbs = []
+  
+  // Add main nav item (only if it's not the current page)
+  if (navItem.url !== url) {
+    breadcrumbs.push({
+      label: navItem.title,
+      href: navItem.url
+    })
+  }
+
+  // Add sub item if it's a sub-page
+  const subItem = navItem.items?.find(item => item.url === url)
+  if (subItem) {
+    breadcrumbs.push({
+      label: subItem.title
+    })
+  } else if (navItem.url === url) {
+    // If we're on the main nav item page, just show it as the current page
+    breadcrumbs.push({
+      label: navItem.title
+    })
+  }
+
+  return breadcrumbs
 }

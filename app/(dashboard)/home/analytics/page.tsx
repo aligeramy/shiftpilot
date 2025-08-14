@@ -1,8 +1,8 @@
-import { WithDashboardLayout } from "@/components/dashboard/with-dashboard-layout"
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { MainContentArea } from "@/components/dashboard/main-content-area"
 
-export default async function AnalyticsPage() {
+export default function AnalyticsPage() {
   const analyticsStats = {
     activeShifts: 32,
     staffOnline: 24,
@@ -10,7 +10,7 @@ export default async function AnalyticsPage() {
   }
 
   return (
-    <WithDashboardLayout
+    <DashboardPage
       customBreadcrumbs={[
         { label: "Dashboard", href: "/home" },
         { label: "Analytics" }
@@ -21,6 +21,6 @@ export default async function AnalyticsPage() {
         title="Analytics Dashboard"
         subtitle="Detailed insights into your radiology scheduling performance."
       />
-    </WithDashboardLayout>
+    </DashboardPage>
   )
 }
