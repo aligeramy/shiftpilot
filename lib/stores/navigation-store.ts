@@ -2,9 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface NavigationState {
-  // Active/expanded states for menu items
+  // Menu expanded states
   expandedItems: Record<string, boolean>
-  activeUrl: string
   
   // Sidebar state
   sidebarOpen: boolean
@@ -12,9 +11,7 @@ interface NavigationState {
   // Actions
   toggleExpanded: (itemTitle: string) => void
   setExpanded: (itemTitle: string, expanded: boolean) => void
-  setActiveUrl: (url: string) => void
   isItemExpanded: (itemTitle: string) => boolean
-  isUrlActive: (url: string) => boolean
   
   // Sidebar actions
   setSidebarOpen: (open: boolean) => void
@@ -28,8 +25,7 @@ const DEFAULT_EXPANDED_ITEMS: Record<string, boolean> = {
 export const useNavigationStore = create<NavigationState>()(
   persist(
     (set, get) => ({
-      expandedItems: DEFAULT_EXPANDED_ITEMS,
-      activeUrl: '/home',
+      expandedItems: { ...DEFAULT_EXPANDED_ITEMS },
       sidebarOpen: true, // Default to open
       
       toggleExpanded: (itemTitle: string) => {
@@ -50,17 +46,9 @@ export const useNavigationStore = create<NavigationState>()(
         }))
       },
       
-      setActiveUrl: (url: string) => {
-        set({ activeUrl: url })
-      },
-      
       isItemExpanded: (itemTitle: string) => {
-        return get().expandedItems[itemTitle] ?? (DEFAULT_EXPANDED_ITEMS as Record<string, boolean>)[itemTitle] ?? false
-      },
-      
-      isUrlActive: (url: string) => {
-        const activeUrl = get().activeUrl
-        return activeUrl === url || activeUrl.startsWith(url + '/')
+        const state = get()
+        return state.expandedItems[itemTitle] ?? DEFAULT_EXPANDED_ITEMS[itemTitle] ?? false
       },
       
       setSidebarOpen: (open: boolean) => {
@@ -73,12 +61,23 @@ export const useNavigationStore = create<NavigationState>()(
     }),
     {
       name: 'navigation-store',
-      // Persist sidebar state along with navigation state
+      // Persist both sidebar and menu state
       partialize: (state) => ({
         expandedItems: state.expandedItems,
-        activeUrl: state.activeUrl,
         sidebarOpen: state.sidebarOpen
-      })
+      }),
+      // Merge function to ensure defaults are always applied
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<NavigationState>
+        return {
+          ...currentState,
+          ...(persisted || {}),
+          expandedItems: {
+            ...DEFAULT_EXPANDED_ITEMS,
+            ...(persisted?.expandedItems || {}),
+          },
+        }
+      },
     }
   )
 )

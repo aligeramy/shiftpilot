@@ -27,7 +27,7 @@ export function NavMain({
   items: NavigationItem[]
 }) {
   const pathname = usePathname()
-  const { expandedItems, toggleExpanded } = useNavigationStore()
+  const { isItemExpanded, toggleExpanded } = useNavigationStore()
   const [isMounted, setIsMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -35,12 +35,14 @@ export function NavMain({
   }, [])
 
   return (
-    <SidebarGroup suppressHydrationWarning>
+    <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const isExpanded = isMounted ? (expandedItems[item.title] ?? false) : false
           const isActive = pathname === item.url || item.items?.some(subItem => pathname === subItem.url)
+          
+          // For SSR, use a safe default. After hydration, use the actual store state
+          const isExpanded = isMounted ? isItemExpanded(item.title) : item.title === 'Dashboard'
           
           return (
             <Collapsible
