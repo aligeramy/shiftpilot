@@ -4,7 +4,6 @@
  */
 import { NextResponse } from 'next/server'
 import { clearDatabase, seedDatabase } from '@/lib/seed'
-import { prisma } from '@/lib/db'
 
 export async function POST() {
   try {

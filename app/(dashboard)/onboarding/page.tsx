@@ -13,8 +13,7 @@ import {
   Users, 
   Clock, 
   UserCheck, 
-  CheckCircle2, 
-  ArrowRight,
+  CheckCircle2,
   Settings,
   Calendar,
   Star,
@@ -195,7 +194,7 @@ export default function OnboardingPage() {
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Your radiology scheduling system is fully configured and ready to use. 
-            Here's everything that's been set up for your organization.
+            Here&apos;s everything that&apos;s been set up for your organization.
           </p>
           <div className="flex justify-center gap-4 mt-6">
             <Button onClick={() => router.push('/schedule')} className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600">
@@ -409,7 +408,7 @@ export default function OnboardingPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-green-600" />
-              You're All Set!
+              You&apos;re All Set!
             </CardTitle>
             <CardDescription>
               Your ShiftPilot system is ready to generate intelligent schedules

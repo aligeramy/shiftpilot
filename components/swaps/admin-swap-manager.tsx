@@ -92,8 +92,7 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
                 user: {
                   id: assignedUser.email, // Use email as ID
                   name: assignedUser.name,
-                  email: assignedUser.email,
-                  subspecialty: assignedUser.subspecialty || 'General'
+                  email: assignedUser.email
                 }
               })
             })

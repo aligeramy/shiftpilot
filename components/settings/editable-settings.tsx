@@ -17,10 +17,7 @@ import {
   Building2, 
   Star, 
   Clock, 
-  Users, 
-  Settings,
-  Check,
-  Calendar
+  Users
 } from 'lucide-react'
 
 interface SettingsData {
@@ -255,7 +252,7 @@ export function EditableSettings() {
                   <Input
                     id="code"
                     value={formData.code || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, code: e.target.value }))}
                     placeholder="e.g. NEURO"
                   />
                 </div>
@@ -264,7 +261,7 @@ export function EditableSettings() {
                   <Input
                     id="name"
                     value={formData.name || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Neuroradiology"
                   />
                 </div>
@@ -345,7 +342,7 @@ export function EditableSettings() {
                   <Input
                     id="shift-code"
                     value={formData.code || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, code: e.target.value }))}
                     placeholder="e.g. N1"
                   />
                 </div>
@@ -354,7 +351,7 @@ export function EditableSettings() {
                   <Input
                     id="shift-name"
                     value={formData.name || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Neuro 1 (CT STAT, on site)"
                   />
                 </div>
@@ -367,7 +364,7 @@ export function EditableSettings() {
                     id="start-time"
                     type="time"
                     value={formData.startTime || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, startTime: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -376,7 +373,7 @@ export function EditableSettings() {
                     id="end-time"
                     type="time"
                     value={formData.endTime || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, endTime: e.target.value }))}
                   />
                 </div>
                 <div className="flex items-center pt-6">
@@ -384,7 +381,7 @@ export function EditableSettings() {
                     type="checkbox"
                     id="all-day"
                     checked={formData.isAllDay || false}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isAllDay: e.target.checked }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, isAllDay: e.target.checked }))}
                     className="mr-2"
                   />
                   <Label htmlFor="all-day">All Day</Label>
@@ -400,7 +397,7 @@ export function EditableSettings() {
                         type="checkbox"
                         id={day.key}
                         checked={formData.recurrence?.[day.key] || false}
-                        onChange={(e) => setFormData(prev => ({
+                        onChange={(e) => setFormData((prev: any) => ({
                           ...prev,
                           recurrence: { ...prev.recurrence, [day.key]: e.target.checked }
                         }))}
@@ -416,7 +413,7 @@ export function EditableSettings() {
                 <Label htmlFor="eligibility">Eligibility</Label>
                 <Select
                   value={formData.eligibilityType || 'allowAny'}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, eligibilityType: value }))}
+                  onValueChange={(value) => setFormData((prev: any) => ({ ...prev, eligibilityType: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -434,7 +431,7 @@ export function EditableSettings() {
                   <Label htmlFor="required-subspecialty">Required Subspecialty</Label>
                   <Select
                     value={formData.requiredSubspecialtyId || ''}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, requiredSubspecialtyId: value }))}
+                    onValueChange={(value) => setFormData((prev: any) => ({ ...prev, requiredSubspecialtyId: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select subspecialty" />
@@ -454,7 +451,7 @@ export function EditableSettings() {
                   <Input
                     id="named-allowlist"
                     value={formData.namedAllowlist || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, namedAllowlist: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, namedAllowlist: e.target.value }))}
                     placeholder="email1@test.com, email2@test.com"
                   />
                 </div>
@@ -550,7 +547,7 @@ export function EditableSettings() {
                   <Input
                     id="staff-name"
                     value={formData.name || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Dr. John Smith"
                   />
                 </div>
@@ -560,7 +557,7 @@ export function EditableSettings() {
                     id="staff-email"
                     type="email"
                     value={formData.email || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, email: e.target.value }))}
                     placeholder="e.g. jsmith@test.com"
                   />
                 </div>
@@ -569,7 +566,7 @@ export function EditableSettings() {
                     <Label htmlFor="staff-subspecialty">Subspecialty</Label>
                     <Select
                       value={formData.subspecialtyId || ''}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, subspecialtyId: value }))}
+                      onValueChange={(value) => setFormData((prev: any) => ({ ...prev, subspecialtyId: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select subspecialty" />
@@ -591,7 +588,7 @@ export function EditableSettings() {
                       max="100"
                       step="5"
                       value={formData.ftePercent || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ftePercent: parseInt(e.target.value) || 100 }))}
+                      onChange={(e) => setFormData((prev: any) => ({ ...prev, ftePercent: parseInt(e.target.value) || 100 }))}
                       placeholder="100"
                     />
                   </div>
@@ -654,7 +651,7 @@ export function EditableSettings() {
           ))}
           {(!data?.staff || data.staff.length === 0) && (
             <div className="text-center text-sm text-muted-foreground py-8">
-              No staff members yet. Click "Add" to create your first team member.
+              No staff members yet. Click &quot;Add&quot; to create your first team member.
             </div>
           )}
         </div>

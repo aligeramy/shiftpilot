@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Building, Clock, Users, Settings, ArrowLeft, Shuffle } from "lucide-react"
+import { Building, Clock, Users, Settings, ArrowLeft } from "lucide-react"
 
 interface OrganizationData {
   organization: {

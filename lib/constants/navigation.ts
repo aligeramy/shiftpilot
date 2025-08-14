@@ -7,7 +7,6 @@ import {
   Moon,
   Sun,
   LogOut,
-  ArrowRightLeft,
 } from "lucide-react"
 import { ShiftPilotLogo } from "@/components/ui/shiftpilot-logo"
 

@@ -9,8 +9,6 @@ import {
   REAL_SUBSPECIALTIES, 
   REAL_RADIOLOGISTS,
   REAL_SHIFT_TYPES,
-  EQUIVALENCE_SETS,
-  FTE_BANDS,
   TEST_ADMIN
 } from './seed-data'
 
@@ -159,37 +157,10 @@ export async function seedDatabase() {
     )
     console.log(`[SEED] Created ${radiologists.length} radiologists`)
     
-    // 6. Create equivalence sets for swaps and fairness
-    console.log('[SEED] Creating equivalence sets...')
-    const equivalenceSets = await Promise.all(
-      EQUIVALENCE_SETS.map(set =>
-        prisma.equivalenceSet.create({
-          data: {
-            code: set.code,
-            name: set.code.replace(/_/g, ' '),
-            organizationId: org.id,
-            shiftTypeCodes: set.members
-          }
-        })
-      )
-    )
-    console.log(`[SEED] Created ${equivalenceSets.length} equivalence sets`)
-    
-    // 7. Create FTE policy bands
-    console.log('[SEED] Creating FTE policy bands...')
-    const fteBands = await Promise.all(
-      FTE_BANDS.map(band =>
-        prisma.fteBand.create({
-          data: {
-            organizationId: org.id,
-            minFte: band.min,
-            maxFte: band.max,
-            ptDaysPerMonth: band.ptDaysPerMonth
-          }
-        })
-      )
-    )
-    console.log(`[SEED] Created ${fteBands.length} FTE bands`)
+    // 6. Equivalence sets and FTE policy bands - not implemented in current schema
+    // These features are planned for future versions
+    console.log('[SEED] Skipping equivalence sets and FTE bands (not in current schema)')
+    console.log('[SEED] Note: Equivalence sets and FTE policy bands are planned for future implementation')
     
     // 8. Create some sample vacation preferences for testing
     console.log('[SEED] Creating sample vacation preferences...')
@@ -237,8 +208,8 @@ export async function seedDatabase() {
       radiologistCount: radiologists.length,
       shiftTypeCount: shiftTypes.length,
       subspecialtyCount: subspecialties.length,
-      equivalenceSetCount: equivalenceSets.length,
-      fteBandCount: fteBands.length
+      equivalenceSetCount: 0, // Feature not implemented
+      fteBandCount: 0 // Feature not implemented
     }
     
   } catch (error) {

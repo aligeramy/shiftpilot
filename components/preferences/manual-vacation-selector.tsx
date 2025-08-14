@@ -189,7 +189,7 @@ export function ManualVacationSelector({
           Manual Selection - {monthName} {year}
         </CardTitle>
         <CardDescription>
-          Select exactly 3 weeks for {radiologistName}'s vacation preferences (P1, P2, P3)
+          Select exactly 3 weeks for {radiologistName}&apos;s vacation preferences (P1, P2, P3)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

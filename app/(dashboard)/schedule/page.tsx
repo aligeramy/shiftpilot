@@ -8,7 +8,7 @@ import { WeeklyMatrix } from '@/components/calendar/weekly-matrix'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSchedule } from '@/hooks/use-schedule'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Calendar, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { RefreshCw, Calendar, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 export default function SchedulePage() {

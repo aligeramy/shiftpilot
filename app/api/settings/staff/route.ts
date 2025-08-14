@@ -57,20 +57,31 @@ export async function POST(request: Request) {
     // Create user with a default password (they should change it on first login)
     const defaultPassword = await bcrypt.hash('changeMe123!', 10)
     
+    // Create user first
     const newUser = await prisma.user.create({
       data: {
         name,
         email,
         password: defaultPassword,
         role: 'RADIOLOGIST',
-        organizationId: user.organizationId,
-        radiologistProfile: {
-          create: {
-            subspecialtyId: validSubspecialtyId,
-            ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
-          }
+        organizationId: user.organizationId
+      }
+    })
+
+    // Create radiologist profile only if subspecialty is provided (since it's required)
+    if (validSubspecialtyId) {
+      await prisma.radiologyProfile.create({
+        data: {
+          userId: newUser.id,
+          subspecialtyId: validSubspecialtyId,
+          ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
         }
-      },
+      })
+    }
+
+    // Get final user with profile data
+    const finalUser = await prisma.user.findUnique({
+      where: { id: newUser.id },
       include: {
         radiologistProfile: {
           include: {
@@ -83,12 +94,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       staff: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        subspecialty: newUser.radiologistProfile?.subspecialty?.code || null,
-        subspecialtyName: newUser.radiologistProfile?.subspecialty?.name || null,
-        ftePercent: newUser.radiologistProfile?.ftePercent || 100
+        id: finalUser!.id,
+        name: finalUser!.name,
+        email: finalUser!.email,
+        subspecialty: finalUser!.radiologistProfile?.subspecialty?.code || null,
+        subspecialtyName: finalUser!.radiologistProfile?.subspecialty?.name || null,
+        ftePercent: finalUser!.radiologistProfile?.ftePercent || 100
       }
     })
 
