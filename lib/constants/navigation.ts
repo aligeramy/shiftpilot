@@ -7,9 +7,17 @@ import {
   BarChart3,
   Stethoscope,
   UserCheck,
+  Sparkles,
+  User as UserIcon,
+  BadgeCheck,
+  CreditCard,
+  Bell,
+  Moon,
+  Sun,
+  LogOut,
 } from "lucide-react"
 
-import type { NavigationConfig } from "@/lib/types/navigation"
+import type { NavigationConfig, ProfileMenuConfig } from "@/lib/types/navigation"
 
 export const NAVIGATION_CONFIG: NavigationConfig = {
   teams: [
@@ -237,4 +245,57 @@ export const generateBreadcrumbs = (url: string) => {
   }
 
   return breadcrumbs
+}
+
+// Profile Menu Configuration
+export const PROFILE_MENU_CONFIG: ProfileMenuConfig = {
+  groups: [
+    {
+      items: [
+        {
+          title: "Upgrade to Pro",
+          icon: Sparkles,
+          action: "upgrade"
+        }
+      ]
+    },
+    {
+      items: [
+        {
+          title: "Profile",
+          icon: UserIcon,
+          href: "/profile"
+        },
+        {
+          title: "Account",
+          icon: BadgeCheck,
+          action: "account"
+        },
+        {
+          title: "Billing",
+          icon: CreditCard,
+          action: "billing"
+        },
+        {
+          title: "Notifications",
+          icon: Bell,
+          action: "notifications"
+        }
+      ]
+    },
+    {
+      items: [
+        {
+          title: "Toggle theme",
+          icon: { light: Moon, dark: Sun },
+          action: "theme"
+        },
+        {
+          title: "Log out",
+          icon: LogOut,
+          action: "logout"
+        }
+      ]
+    }
+  ]
 }

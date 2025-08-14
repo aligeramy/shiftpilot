@@ -111,7 +111,7 @@ export function ProfileForm({
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 bg-background/10 backdrop-blur-sm border border-border/10 ring-1 ring-foreground/3">
       <div className="flex items-start gap-6">
         <div className="h-24 w-24 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
           {preview ? (

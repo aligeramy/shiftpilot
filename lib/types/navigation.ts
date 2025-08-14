@@ -30,3 +30,18 @@ export interface NavigationConfig {
   teams: Team[]
   navMain: NavigationItem[]
 }
+
+export interface ProfileMenuItem {
+  title: string
+  icon: LucideIcon | { light: LucideIcon; dark: LucideIcon }
+  href?: string
+  action?: string
+}
+
+export interface ProfileMenuGroup {
+  items: ProfileMenuItem[]
+}
+
+export interface ProfileMenuConfig {
+  groups: ProfileMenuGroup[]
+}
