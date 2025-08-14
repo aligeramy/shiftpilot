@@ -6,8 +6,17 @@ export default auth((req) => {
   const isAuthenticated = !!req.auth?.user
 
   const isAuthPage = nextUrl.pathname.startsWith("/auth")
-  const isProtectedRoute = nextUrl.pathname.startsWith("/home")
+  const isTestAPI = nextUrl.pathname.startsWith("/api/test")
+  const isProtectedRoute = nextUrl.pathname.startsWith("/home") || 
+                          nextUrl.pathname.startsWith("/onboarding") ||
+                          nextUrl.pathname.startsWith("/profile") ||
+                          nextUrl.pathname.startsWith("/scheduling")
   const isRootPath = nextUrl.pathname === "/"
+
+  // Allow test APIs to bypass authentication (for development/testing)
+  if (isTestAPI) {
+    return NextResponse.next()
+  }
 
   // Redirect authenticated users away from auth pages
   if (isAuthenticated && isAuthPage) {
@@ -22,6 +31,11 @@ export default auth((req) => {
   // Redirect authenticated users from root to home
   if (isAuthenticated && isRootPath) {
     return NextResponse.redirect(new URL("/home", nextUrl))
+  }
+
+  // Redirect unauthenticated users from root to login
+  if (!isAuthenticated && isRootPath) {
+    return NextResponse.redirect(new URL("/auth/login", nextUrl))
   }
 
   return NextResponse.next()

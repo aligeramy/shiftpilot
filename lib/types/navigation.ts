@@ -1,4 +1,5 @@
 import { type LucideIcon } from "lucide-react"
+import { type ComponentType } from "react"
 
 export interface NavigationItem {
   title: string
@@ -16,7 +17,7 @@ export interface NavigationSubItem {
 
 export interface Team {
   name: string
-  logo: LucideIcon
+  logo: LucideIcon | ComponentType<{ className?: string }>
   plan: string
 }
 

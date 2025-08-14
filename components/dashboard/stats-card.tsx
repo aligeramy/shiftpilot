@@ -13,7 +13,7 @@ interface StatsCardProps {
 export function StatsCard({ title, value, className = "", icon }: StatsCardProps) {
   return (
     <motion.div 
-      className={`bg-muted/10 aspect-video rounded-xl flex items-center justify-center ${className}`}
+      className={`bg-gradient-to-br from-white/30 via-white/20 to-white/10 backdrop-blur-md rounded-2xl border border-white/30 shadow-lg aspect-video flex items-center justify-center hover:shadow-xl transition-shadow ${className}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ 
@@ -21,10 +21,10 @@ export function StatsCard({ title, value, className = "", icon }: StatsCardProps
         ease: [0.25, 0.1, 0.25, 1]
       }}
     >
-      <div className="text-center">
+      <div className="text-center p-4">
         {icon && (
           <motion.div 
-            className="mb-2 flex justify-center"
+            className="mb-3 flex justify-center"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.2 }}
@@ -33,7 +33,7 @@ export function StatsCard({ title, value, className = "", icon }: StatsCardProps
           </motion.div>
         )}
         <motion.h3 
-          className="font-semibold text-2xl tracking-tight "
+          className="font-semibold text-lg tracking-tight text-slate-800"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.2 }}
@@ -41,7 +41,7 @@ export function StatsCard({ title, value, className = "", icon }: StatsCardProps
           {title}
         </motion.h3>
         <motion.p 
-          className="text-md text-f  border mt-2 ring-1 ring-foreground/10 inline-block px-4 rounded-full py-0.5"
+          className="text-2xl font-bold text-slate-900 mt-2"
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.2 }}

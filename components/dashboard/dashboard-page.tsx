@@ -29,8 +29,13 @@ export function DashboardPage({
         userEmail={session?.user?.email || undefined}
       />
       
-      <div className="flex-1 gap-4 flex flex-col overflow-y-auto min-h-0  p-4">
-          {children}
+      {/* Main content area with glassmorphic scrollable container */}
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="h-full bg-gradient-to-br from-white/20 via-white/10 to-white/5 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl overflow-y-auto">
+          <div className="p-6 space-y-6">
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   )

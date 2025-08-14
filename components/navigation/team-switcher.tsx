@@ -19,6 +19,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import type { Team } from "@/lib/types/navigation"
+import { ShiftPilotLogo } from "@/components/ui/shiftpilot-logo"
+
+interface Organization {
+  name: string
+  slug: string
+}
 
 export function TeamSwitcher({
   teams,
@@ -27,6 +33,33 @@ export function TeamSwitcher({
 }) {
   const { isMobile } = useSidebar()
   const [activeTeam, setActiveTeam] = React.useState(teams[0])
+  const [organization, setOrganization] = React.useState<Organization | null>(null)
+
+  React.useEffect(() => {
+    const fetchOrganization = async () => {
+      try {
+        const response = await fetch('/api/settings/overview')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.organization) {
+            setOrganization({
+              name: data.organization.name,
+              slug: data.organization.slug
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization:', error)
+      }
+    }
+
+    fetchOrganization()
+  }, [])
+
+  const truncateText = (text: string, maxLength: number = 20) => {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength - 3) + '...'
+  }
 
   return (
     <SidebarMenu>
@@ -38,11 +71,13 @@ export function TeamSwitcher({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <activeTeam.logo className="size-4" />
+                <ShiftPilotLogo className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{activeTeam.name}</span>
-                <span className="truncate text-xs">{activeTeam.plan}</span>
+                <span className="truncate text-xs">
+                  {organization ? truncateText(organization.name) : activeTeam.plan}
+                </span>
               </div>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
@@ -54,7 +89,7 @@ export function TeamSwitcher({
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Teams
+              {organization ? organization.name : 'Organization'}
             </DropdownMenuLabel>
             {teams.map((team, index) => (
               <DropdownMenuItem
@@ -63,7 +98,7 @@ export function TeamSwitcher({
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-sm border">
-                  <team.logo className="size-4 shrink-0" />
+                  <ShiftPilotLogo className="size-4 shrink-0" />
                 </div>
                 {team.name}
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>

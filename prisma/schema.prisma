@@ -17,12 +17,28 @@ model User {
   password      String
   emailVerified DateTime?
   image         String?
+  role          UserRole        @default(RADIOLOGIST)
+  organizationId String?        @map("organization_id")
+  organization  Organization?   @relation(fields: [organizationId], references: [id])
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   accounts      Account[]
   sessions      Session[]
+  
+  // Radiologist specific
+  radiologistProfile RadiologyProfile?
+  vacationPreferences VacationPreference[]
+  notifications     Notification[]
+  scheduleAssignments ScheduleAssignment[]
 
   @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  CHIEF
+  RADIOLOGIST
 }
 
 model Account {
@@ -62,4 +78,197 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verificationtokens")
+}
+
+// Organization (Clinic/Hospital)
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  timezone        String   @default("America/Toronto")
+  weekStart       String   @default("MONDAY")
+  onboardingStep  Int      @default(0)
+  onboardingComplete Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  users           User[]
+  subspecialties  Subspecialty[]
+  shiftTypes      ShiftType[]
+  notifications   Notification[]
+  scheduleInstances ScheduleInstance[]
+
+  @@map("organizations")
+}
+
+// Subspecialties (Neuro, Body, MSK, etc.)
+model Subspecialty {
+  id              String   @id @default(cuid())
+  code            String
+  name            String
+  organizationId  String   @map("organization_id")
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  
+  radiologistProfiles RadiologyProfile[]
+  shiftTypes      ShiftType[]
+
+  @@unique([organizationId, code])
+  @@map("subspecialties")
+}
+
+// Shift Types (Neuro 1, Body MRI, etc.)
+model ShiftType {
+  id              String   @id @default(cuid())
+  code            String
+  name            String
+  startTime       String   // "08:00"
+  endTime         String   // "16:00"
+  isAllDay        Boolean  @default(false)
+  organizationId  String   @map("organization_id")
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Eligibility
+  requiredSubspecialtyId String? @map("required_subspecialty_id")
+  requiredSubspecialty   Subspecialty? @relation(fields: [requiredSubspecialtyId], references: [id])
+  allowAny        Boolean  @default(false)
+  namedAllowlist  String?  @map("named_allowlist") // Comma-separated emails for named shifts
+  
+  // Recurrence
+  monday          Boolean  @default(false)
+  tuesday         Boolean  @default(false)
+  wednesday       Boolean  @default(false)
+  thursday        Boolean  @default(false)
+  friday          Boolean  @default(false)
+  saturday        Boolean  @default(false)
+  sunday          Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  scheduleInstances ScheduleInstance[]
+
+  @@unique([organizationId, code])
+  @@map("shift_types")
+}
+
+// Radiologist Profile
+model RadiologyProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subspecialtyId  String   @map("subspecialty_id")
+  subspecialty    Subspecialty @relation(fields: [subspecialtyId], references: [id])
+  ftePercent      Int      @default(100) // 60-100
+  isFellow        Boolean  @default(false)
+  isResident      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("radiology_profiles")
+}
+
+// Vacation Preferences
+model VacationPreference {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year            Int
+  month           Int      // 1-12
+  weekNumber      Int      // Week number in month
+  rank            Int      // 1=first choice, 2=second, 3=third
+  weekStartDate   DateTime // Monday of the week
+  weekEndDate     DateTime // Sunday of the week
+  status          PreferenceStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, year, month, rank])
+  @@map("vacation_preferences")
+}
+
+enum PreferenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Notifications (simulated for MVP)
+model Notification {
+  id              String   @id @default(cuid())
+  organizationId  String   @map("organization_id")
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  title           String
+  message         String
+  status          NotificationStatus @default(PENDING)
+  metadata        Json?    // Store any additional data
+  readAt          DateTime?
+  respondedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  VACATION_REQUEST
+  SCHEDULE_PUBLISHED
+  SWAP_REQUEST
+  GENERAL
+}
+
+enum NotificationStatus {
+  PENDING
+  READ
+  RESPONDED
+  EXPIRED
+}
+
+// Schedule Instances (materialized shift occurrences)
+model ScheduleInstance {
+  id              String   @id @default(cuid())
+  organizationId  String   @map("organization_id")
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shiftTypeId     String   @map("shift_type_id")
+  shiftType       ShiftType @relation(fields: [shiftTypeId], references: [id])
+  date            DateTime @db.Date
+  startTime       DateTime
+  endTime         DateTime
+  status          ScheduleStatus @default(DRAFT)
+  createdAt       DateTime @default(now())
+  
+  assignments     ScheduleAssignment[]
+
+  @@unique([organizationId, shiftTypeId, date])
+  @@map("schedule_instances")
+}
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Schedule Assignments
+model ScheduleAssignment {
+  id              String   @id @default(cuid())
+  instanceId      String   @map("instance_id")
+  instance        ScheduleInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id])
+  assignmentType  AssignmentType @default(GENERATED)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([instanceId, userId])
+  @@map("schedule_assignments")
+}
+
+enum AssignmentType {
+  GENERATED
+  MANUAL
+  SWAPPED
 }
