@@ -44,6 +44,7 @@
 
   --color-brand-main: var(--brand-main);
   --color-brand-light: var(--brand-light);
+  --color-brand-primary: var(--brand-primary);
 }
 
 :root {
@@ -82,6 +83,7 @@
 
     --brand-main: #65c1f4;
     --brand-light: #c9e7f6;
+    --brand-primary: #007bff;
 }
 
 .dark {

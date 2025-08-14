@@ -52,7 +52,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent/20 border border-border/10 ring-1 ring-foreground/3 data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -68,7 +68,7 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg mb-5.5 bg-background/10 backdrop-blur-sm border border-border/10 ring-1 ring-foreground/3"
             side={isMobile ? "top" : "right"}
             align={isMobile ? "end" : "start"}
             sideOffset={4}
@@ -99,7 +99,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/home/profile">
+                <Link href="/profile">
                   <UserIcon />
                   Profile
                 </Link>

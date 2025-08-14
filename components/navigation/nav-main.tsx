@@ -79,8 +79,8 @@ export function NavMain({
                     ))}
                     {item.title === 'Settings' && (
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={pathname === '/home/profile'}>
-                          <Link href="/home/profile" prefetch={true}>
+                        <SidebarMenuSubButton asChild isActive={pathname === '/profile'}>
+                          <Link href="/profile" prefetch={true}>
                             <span>Profile</span>
                           </Link>
                         </SidebarMenuSubButton>

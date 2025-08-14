@@ -27,7 +27,7 @@ export async function uploadProfileImage(formData: FormData) {
     data: { image: blob.url },
   })
 
-  revalidatePath("/home/profile")
+  revalidatePath("/profile")
   return { url: blob.url }
 }
 
@@ -47,6 +47,6 @@ export async function removeProfileImage() {
     data: { image: null },
   })
 
-  revalidatePath("/home/profile")
+  revalidatePath("/profile")
   return { success: true }
 }
