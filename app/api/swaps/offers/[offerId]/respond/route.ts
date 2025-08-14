@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { offerId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !session?.user?.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -25,7 +24,7 @@ export async function POST(
     }
 
     // Find the offer and verify it belongs to the current user
-    const offer = await db.swapOffer.findFirst({
+    const offer = await prisma.swapOffer.findFirst({
       where: {
         id: offerId,
         targetUserId: session.user.id,
@@ -79,7 +78,7 @@ export async function POST(
     }
 
     // Start a transaction to handle the swap
-    const result = await db.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Update the offer
       const updatedOffer = await tx.swapOffer.update({
         where: { id: offerId },

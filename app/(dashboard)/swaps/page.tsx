@@ -1,8 +1,17 @@
 import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Clock, ArrowRightLeft } from "lucide-react"
+import { AdminSwapManager } from "@/components/swaps/admin-swap-manager"
+import { SwapRequestsList } from "@/components/swaps/swap-requests-list"
 
-export default function SwapsPage() {
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+
+export default async function SwapsPage() {
+  const session = await auth()
+  
+  if (!session?.user?.organizationId) {
+    redirect('/auth/login')
+  }
   return (
     <DashboardPage
       customBreadcrumbs={[
@@ -18,28 +27,8 @@ export default function SwapsPage() {
           </p>
         </div>
 
-        {/* Swap Request Creation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="h-5 w-5" />
-              Request a Swap
-            </CardTitle>
-            <CardDescription>
-              Create a new shift swap request with another radiologist.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <ArrowRightLeft className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="mb-4">Swap request functionality is coming soon.</p>
-              <p className="text-sm">
-                For now, swap visualization is available in the Schedule Calendar.
-                Swapped shifts are shown with dashed borders and ↔︎ indicators.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Admin Swap Manager */}
+        <AdminSwapManager organizationId={session.user.organizationId} />
 
         {/* Pending Swaps */}
         <Card>
@@ -50,26 +39,20 @@ export default function SwapsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No pending swap requests</p>
-            </div>
+            <SwapRequestsList organizationId={session.user.organizationId} showAll={false} />
           </CardContent>
         </Card>
 
-        {/* Swap History */}
+        {/* All Swap Requests */}
         <Card>
           <CardHeader>
-            <CardTitle>Swap History</CardTitle>
+            <CardTitle>All Swap Requests</CardTitle>
             <CardDescription>
-              View completed and cancelled swap requests.
+              View all swap requests including completed and cancelled ones.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No swap history available</p>
-            </div>
+            <SwapRequestsList organizationId={session.user.organizationId} showAll={true} />
           </CardContent>
         </Card>
       </div>

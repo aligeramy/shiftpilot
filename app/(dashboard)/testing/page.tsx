@@ -17,7 +17,10 @@ import {
   Users,
   Calendar,
   Zap,
-  Activity
+  Activity,
+  Download,
+  FileText,
+  Table
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -90,6 +93,34 @@ export default function TestingPage() {
     }
   }
 
+  const exportCalendar = (format: 'json' | 'csv' | 'html') => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    
+    const url = `/api/test/export-calendar?year=${year}&month=${month}&format=${format}`
+    window.open(url, '_blank')
+    toast.success(`Exporting calendar as ${format.toUpperCase()}...`)
+  }
+
+  const exportTestResults = () => {
+    if (!testResults) {
+      toast.error('No test results to export')
+      return
+    }
+
+    const blob = new Blob([JSON.stringify(testResults, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `test-results-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.success('Test results exported as JSON')
+  }
+
   const getHealthColor = (health: string) => {
     switch (health) {
       case 'HEALTHY': return 'text-green-600 bg-green-50'
@@ -124,29 +155,89 @@ export default function TestingPage() {
             </p>
           </div>
           
-          <Button 
-            onClick={runComprehensiveTests} 
-            disabled={isRunning}
-            size="lg"
-            className="gap-2"
-          >
-            {isRunning ? (
-              <>
-                <Clock className="h-4 w-4 animate-spin" />
-                Running Tests...
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4" />
-                Run All Tests
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={runComprehensiveTests} 
+              disabled={isRunning}
+              size="lg"
+              className="gap-2"
+            >
+              {isRunning ? (
+                <>
+                  <Clock className="h-4 w-4 animate-spin" />
+                  Running Tests...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Run All Tests
+                </>
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Export Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Calendar Export
+            </CardTitle>
+            <CardDescription>
+              Export current month&apos;s schedule to compare with manual calendars and validate system accuracy.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => exportCalendar('json')}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Export JSON
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => exportCalendar('csv')}
+                className="gap-2"
+              >
+                <Table className="h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => exportCalendar('html')}
+                className="gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Export HTML
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Compare exported schedules with the manual calendars (sheet001.htm - sheet005.htm) to validate 
+              system accuracy, spot equivalence handling, and identify any missing swaps or assignments.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Test Results Overview */}
         {testResults && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Test Results</h2>
+              <Button
+                onClick={exportTestResults}
+                variant="outline"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export Test Results
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">System Health</CardTitle>
@@ -199,6 +290,7 @@ export default function TestingPage() {
               </CardContent>
             </Card>
           </div>
+          </>
         )}
 
         {/* Detailed Results */}

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !session?.user?.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -22,10 +21,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the assignment details
-    const assignment = await db.scheduleAssignment.findFirst({
+    const assignment = await prisma.scheduleAssignment.findFirst({
       where: {
         id: assignmentId,
-        userId: session.user.id,
         instance: {
           organizationId: session.user.organizationId
         }
@@ -33,13 +31,28 @@ export async function GET(request: NextRequest) {
       include: {
         instance: {
           include: {
-            shiftType: true
+            shiftType: {
+              select: {
+                id: true,
+                name: true,
+                startTime: true,
+                endTime: true,
+                requiredSubspecialty: true,
+                equivalenceCode: true,
+                allowAny: true,
+                requiredSubspecialtyId: true,
+                namedAllowlist: true
+              }
+            }
           }
         },
         user: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
             radiologistProfile: {
-              include: {
+              select: {
                 subspecialty: true
               }
             }
@@ -56,16 +69,16 @@ export async function GET(request: NextRequest) {
     }
 
     const shiftDate = assignment.instance.date
-    const shiftType = assignment.instance.shiftType
+    const shift = assignment.instance.shiftType
 
-    // Find all assignments on the same date
-    const potentialSwaps = await db.scheduleAssignment.findMany({
+    // Find all assignments on the same date in the same schedule instance
+    const potentialSwaps = await prisma.scheduleAssignment.findMany({
       where: {
         instance: {
           organizationId: session.user.organizationId,
           date: shiftDate
         },
-        userId: { not: session.user.id }, // Exclude current user
+        userId: { not: assignment.userId }, // Exclude the requester
         user: {
           radiologistProfile: {
             isNot: null // Only radiologists
@@ -75,18 +88,28 @@ export async function GET(request: NextRequest) {
       include: {
         instance: {
           include: {
-            shiftType: true
+            shiftType: {
+              select: {
+                id: true,
+                name: true,
+                startTime: true,
+                endTime: true,
+                requiredSubspecialty: true,
+                equivalenceCode: true,
+                allowAny: true,
+                requiredSubspecialtyId: true,
+                namedAllowlist: true
+              }
+            }
           }
         },
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          },
-          include: {
+            email: true,
             radiologistProfile: {
-              include: {
+              select: {
                 subspecialty: true
               }
             }
@@ -95,43 +118,54 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Filter eligible partners based on:
-    // 1. Same shift type (exact match)
-    // 2. Equivalence set (if specified)
-    // 3. Eligibility rules (can the requester work the target shift?)
+    // Filter eligible partners and check for conflicts
     const eligiblePartners = []
 
     for (const potentialSwap of potentialSwaps) {
-      const targetShiftType = potentialSwap.instance.shiftType
+      const targetShift = potentialSwap.instance.shiftType
       const targetUser = potentialSwap.user
       
       // Check if it's the same shift type
-      const isSameShiftType = shiftType.id === targetShiftType.id
+      const isSameShiftType = shift.id === targetShift.id
 
       // Check if they're in the same equivalence set (if specified)
       let isInEquivalenceSet = false
-      if (equivalenceCode) {
-        // This would need to be implemented based on your equivalence set logic
-        // For now, we'll assume equivalence sets are defined in configuration
-        isInEquivalenceSet = await checkEquivalenceSet(
-          session.user.organizationId,
-          shiftType.code,
-          targetShiftType.code,
-          equivalenceCode
-        )
+      if (equivalenceCode && shift.equivalenceCode && targetShift.equivalenceCode) {
+        isInEquivalenceSet = shift.equivalenceCode === targetShift.equivalenceCode
       }
 
       // Check if the requester can work the target shift
       const canRequesterWorkTarget = await checkEligibility(
         assignment.user,
-        targetShiftType
+        targetShift
       )
 
       // Check if the target user can work the requester's shift
       const canTargetWorkRequester = await checkEligibility(
         targetUser,
-        shiftType
+        shift
       )
+
+      // Check for time conflicts for both users
+      const requesterConflicts = await checkTimeConflicts(
+        assignment.userId,
+        shiftDate,
+        targetShift,
+        assignment.instanceId,
+        session.user.organizationId,
+        [potentialSwap.id] // Exclude the swap target assignment
+      )
+
+      const targetConflicts = await checkTimeConflicts(
+        targetUser.id,
+        shiftDate,
+        shift,
+        assignment.instanceId,
+        session.user.organizationId,
+        [assignment.id] // Exclude the original assignment
+      )
+
+      const hasConflicts = requesterConflicts.length > 0 || targetConflicts.length > 0
 
       if ((isSameShiftType || isInEquivalenceSet) && 
           canRequesterWorkTarget && 
@@ -139,7 +173,17 @@ export async function GET(request: NextRequest) {
         eligiblePartners.push({
           assignment: potentialSwap,
           swapType: isSameShiftType ? 'SAME_TYPE' : 'EQUIVALENT_TYPE',
-          canSwap: true
+          canSwap: !hasConflicts,
+          conflicts: {
+            requester: requesterConflicts,
+            target: targetConflicts
+          },
+          eligibilityChecks: {
+            canRequesterWorkTarget,
+            canTargetWorkRequester,
+            isSameShiftType,
+            isInEquivalenceSet
+          }
         })
       }
     }
@@ -158,43 +202,80 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function checkEquivalenceSet(
+async function checkTimeConflicts(
+  userId: string,
+  date: Date,
+  shift: any,
+  instanceId: string,
   organizationId: string,
-  shiftType1: string,
-  shiftType2: string,
-  equivalenceCode: string
-): Promise<boolean> {
-  // This is a placeholder - you'll need to implement based on your equivalence set configuration
-  // For now, we'll use some hardcoded equivalence sets based on your manual calendars
-  const equivalenceSets: Record<string, string[]> = {
-    'NEURO_DAY': ['N1', 'N2', 'N3', 'N4'],
-    'BODY_DAY': ['CTUS', 'MSK', 'BODY_VOL', 'BODY_MRI', 'XR_GEN'],
-    'CLINIC': ['CLIN_STONEY', 'CLIN_MA1', 'CLIN_SPEERS', 'CLIN_WALKERS', 'CLIN_WH_OTHER', 'CLIN_BRANT'],
-    'NEURO_LATE': ['NEURO_16_18', 'NEURO_18_21'],
-    'BODY_LATE': ['BODY_16_18', 'BODY_18_21']
+  excludeAssignmentIds: string[] = []
+): Promise<any[]> {
+  // Find all assignments for this user on the same date
+  const userAssignments = await prisma.scheduleAssignment.findMany({
+    where: {
+      userId,
+      instance: {
+        date,
+        organizationId
+      },
+      id: {
+        notIn: excludeAssignmentIds
+      }
+    },
+    include: {
+      instance: {
+        include: {
+          shiftType: {
+            select: {
+              name: true,
+              startTime: true,
+              endTime: true
+            }
+          }
+        }
+      }
+    }
+  })
+
+  const conflicts = []
+  const shiftStart = new Date(`1970-01-01T${shift.startTime}`)
+  const shiftEnd = new Date(`1970-01-01T${shift.endTime}`)
+
+  for (const assignment of userAssignments) {
+    const assignmentStart = new Date(`1970-01-01T${assignment.instance.shiftType.startTime}`)
+    const assignmentEnd = new Date(`1970-01-01T${assignment.instance.shiftType.endTime}`)
+
+    // Check if times overlap
+    if (shiftStart < assignmentEnd && shiftEnd > assignmentStart) {
+      conflicts.push({
+        assignmentId: assignment.id,
+        shiftName: assignment.instance.shiftType.name,
+        startTime: assignment.instance.shiftType.startTime,
+        endTime: assignment.instance.shiftType.endTime
+      })
+    }
   }
 
-  const equivalenceSet = equivalenceSets[equivalenceCode]
-  if (!equivalenceSet) return false
-
-  return equivalenceSet.includes(shiftType1) && equivalenceSet.includes(shiftType2)
+  return conflicts
 }
 
 async function checkEligibility(
   user: any,
-  shiftType: any
+  shift: any
 ): Promise<boolean> {
-  // Check eligibility based on shift type requirements
-  if (shiftType.allowAny) {
+  // Check eligibility based on shift requirements
+  if (shift.allowAny) {
     return true
   }
 
-  if (shiftType.requiredSubspecialtyId) {
-    return user.radiologistProfile?.subspecialty?.id === shiftType.requiredSubspecialtyId
+  if (shift.requiredSubspecialtyId) {
+    // Check if user has the required subspecialty
+    const userSubspecialty = user.radiologistProfile?.subspecialty
+    return userSubspecialty?.id === shift.requiredSubspecialtyId
   }
 
-  if (shiftType.namedAllowlist) {
-    const allowedEmails = shiftType.namedAllowlist.split(',').map((email: string) => email.trim())
+  if (shift.namedAllowlist) {
+    const allowedEmails = shift.namedAllowlist.split(',').map((email: string) => email.trim())
     return allowedEmails.includes(user.email)
   }
 

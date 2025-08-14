@@ -10,7 +10,13 @@ export default auth((req) => {
   const isProtectedRoute = nextUrl.pathname.startsWith("/home") || 
                           nextUrl.pathname.startsWith("/onboarding") ||
                           nextUrl.pathname.startsWith("/profile") ||
-                          nextUrl.pathname.startsWith("/scheduling")
+                          nextUrl.pathname.startsWith("/scheduling") ||
+                          nextUrl.pathname.startsWith("/swaps") ||
+                          nextUrl.pathname.startsWith("/schedule") ||
+                          nextUrl.pathname.startsWith("/preferences") ||
+                          nextUrl.pathname.startsWith("/settings") ||
+                          nextUrl.pathname.startsWith("/testing") ||
+                          nextUrl.pathname.startsWith("/fairness")
   const isRootPath = nextUrl.pathname === "/"
 
   // Allow test APIs to bypass authentication (for development/testing)

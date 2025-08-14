@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !session?.user?.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -18,7 +17,7 @@ export async function POST(
     const { targetUserIds, targetAssignmentIds } = body
 
     // Verify the swap request exists and is open
-    const swapRequest = await db.swapRequest.findFirst({
+    const swapRequest = await prisma.swapRequest.findFirst({
       where: {
         id: swapRequestId,
         status: 'OPEN',
@@ -60,7 +59,7 @@ export async function POST(
       const targetAssignmentId = targetAssignmentIds?.[i]
 
       // Verify target user exists and is in same organization
-      const targetUser = await db.user.findFirst({
+      const targetUser = await prisma.user.findFirst({
         where: {
           id: targetUserId,
           organizationId: session.user.organizationId
@@ -74,7 +73,7 @@ export async function POST(
       // If target assignment specified, verify it belongs to target user
       let validTargetAssignment = null
       if (targetAssignmentId) {
-        validTargetAssignment = await db.scheduleAssignment.findFirst({
+        validTargetAssignment = await prisma.scheduleAssignment.findFirst({
           where: {
             id: targetAssignmentId,
             userId: targetUserId,
@@ -85,7 +84,7 @@ export async function POST(
         })
       }
 
-      const offer = await db.swapOffer.create({
+      const offer = await prisma.swapOffer.create({
         data: {
           swapRequestId,
           targetUserId,

@@ -9,6 +9,8 @@ import {
   REAL_SUBSPECIALTIES, 
   REAL_RADIOLOGISTS,
   REAL_SHIFT_TYPES,
+  EQUIVALENCE_SETS,
+  FTE_BANDS,
   TEST_ADMIN
 } from './seed-data'
 
@@ -157,7 +159,39 @@ export async function seedDatabase() {
     )
     console.log(`[SEED] Created ${radiologists.length} radiologists`)
     
-    // 6. Create some sample vacation preferences for testing
+    // 6. Create equivalence sets for swaps and fairness
+    console.log('[SEED] Creating equivalence sets...')
+    const equivalenceSets = await Promise.all(
+      EQUIVALENCE_SETS.map(set =>
+        prisma.equivalenceSet.create({
+          data: {
+            code: set.code,
+            name: set.code.replace(/_/g, ' '),
+            organizationId: org.id,
+            shiftTypeCodes: set.members
+          }
+        })
+      )
+    )
+    console.log(`[SEED] Created ${equivalenceSets.length} equivalence sets`)
+    
+    // 7. Create FTE policy bands
+    console.log('[SEED] Creating FTE policy bands...')
+    const fteBands = await Promise.all(
+      FTE_BANDS.map(band =>
+        prisma.fteBand.create({
+          data: {
+            organizationId: org.id,
+            minFte: band.min,
+            maxFte: band.max,
+            ptDaysPerMonth: band.ptDaysPerMonth
+          }
+        })
+      )
+    )
+    console.log(`[SEED] Created ${fteBands.length} FTE bands`)
+    
+    // 8. Create some sample vacation preferences for testing
     console.log('[SEED] Creating sample vacation preferences...')
     const currentMonth = new Date()
     currentMonth.setDate(1) // First of current month
@@ -202,7 +236,9 @@ export async function seedDatabase() {
       adminUserId: admin.id,
       radiologistCount: radiologists.length,
       shiftTypeCount: shiftTypes.length,
-      subspecialtyCount: subspecialties.length
+      subspecialtyCount: subspecialties.length,
+      equivalenceSetCount: equivalenceSets.length,
+      fteBandCount: fteBands.length
     }
     
   } catch (error) {
@@ -220,6 +256,8 @@ export async function clearDatabase() {
   await prisma.scheduleInstance.deleteMany()
   await prisma.notification.deleteMany()
   await prisma.radiologyProfile.deleteMany()
+  await prisma.equivalenceSet.deleteMany()
+  await prisma.fteBand.deleteMany()
   await prisma.shiftType.deleteMany()
   await prisma.subspecialty.deleteMany()
   await prisma.user.deleteMany()

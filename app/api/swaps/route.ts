@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
       where.requesterId = userId
     }
 
-    const swapRequests = await db.swapRequest.findMany({
+    const swapRequests = await prisma.swapRequest.findMany({
       where,
       include: {
         requester: {
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !session?.user?.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the swap request
-    const swapRequest = await db.swapRequest.create({
+    const swapRequest = await prisma.swapRequest.create({
       data: {
         requesterId: session.user.id,
         assignmentId,

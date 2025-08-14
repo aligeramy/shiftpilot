@@ -66,6 +66,9 @@ export interface GenerationResult {
   executionTimeMs: number
 }
 
+// In-memory lock to prevent concurrent generations for the same period
+const generationLocks = new Map<string, Promise<any>>()
+
 export class ScheduleGenerator {
   private organizationId: string
   private config: GenerationConfig
@@ -85,6 +88,28 @@ export class ScheduleGenerator {
   }
 
   async generateSchedule(): Promise<GenerationResult> {
+    const lockKey = `${this.organizationId}-${this.config.year}-${this.config.month}`
+    
+    // Check if generation is already in progress for this period
+    if (generationLocks.has(lockKey)) {
+      console.log(`[GENERATOR] Generation already in progress for ${lockKey}, waiting...`)
+      return await generationLocks.get(lockKey)!
+    }
+
+    // Create and store the generation promise
+    const generationPromise = this._doGeneration()
+    generationLocks.set(lockKey, generationPromise)
+
+    try {
+      const result = await generationPromise
+      return result
+    } finally {
+      // Clean up the lock when done
+      generationLocks.delete(lockKey)
+    }
+  }
+
+  private async _doGeneration(): Promise<GenerationResult> {
     const startTime = Date.now()
     console.log(`[GENERATOR] Starting schedule generation for ${this.config.year}-${this.config.month}`)
 
@@ -427,29 +452,33 @@ export class ScheduleGenerator {
   private async saveAssignments(assignments: AssignmentResult[]) {
     if (assignments.length === 0) return
 
-    // Clear existing assignments for this period
-    const firstDay = new Date(this.config.year, this.config.month - 1, 1)
-    const lastDay = new Date(this.config.year, this.config.month, 0)
+    // Use a transaction to make delete + create atomic
+    await prisma.$transaction(async (tx) => {
+      // Clear existing assignments for this period
+      const firstDay = new Date(this.config.year, this.config.month - 1, 1)
+      const lastDay = new Date(this.config.year, this.config.month, 0)
 
-    await prisma.scheduleAssignment.deleteMany({
-      where: {
-        instance: {
-          organizationId: this.organizationId,
-          date: {
-            gte: firstDay,
-            lte: lastDay
+      await tx.scheduleAssignment.deleteMany({
+        where: {
+          instance: {
+            organizationId: this.organizationId,
+            date: {
+              gte: firstDay,
+              lte: lastDay
+            }
           }
         }
-      }
-    })
+      })
 
-    // Create new assignments
-    await prisma.scheduleAssignment.createMany({
-      data: assignments.map(assignment => ({
-        instanceId: assignment.instanceId,
-        userId: assignment.userId,
-        assignmentType: 'GENERATED' as const
-      }))
+      // Create new assignments
+      await tx.scheduleAssignment.createMany({
+        data: assignments.map(assignment => ({
+          instanceId: assignment.instanceId,
+          userId: assignment.userId,
+          assignmentType: 'GENERATED' as const
+        })),
+        skipDuplicates: true // Skip any duplicates that might exist
+      })
     })
 
     console.log(`[GENERATOR] Saved ${assignments.length} assignments to database`)

@@ -24,7 +24,10 @@ export async function GET() {
     }
 
     return NextResponse.json({ 
-      organization: organization 
+      organization: organization ? {
+        ...organization,
+        onboardingComplete: organization.onboardingComplete || false
+      } : null
     })
   } catch (error) {
     console.error('[API] Onboarding status error:', error)
