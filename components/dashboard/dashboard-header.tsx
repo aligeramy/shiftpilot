@@ -3,7 +3,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { DashboardBreadcrumb } from "./dashboard-breadcrumb"
-import { signOut } from "@/lib/auth"
+import { signOutAction } from "@/lib/actions/auth-actions"
 
 interface BreadcrumbItem {
   label: string
@@ -36,12 +36,7 @@ export function DashboardHeader({
           Welcome, {userName || userEmail}
         </span>
         <ThemeToggle />
-        <form
-          action={async () => {
-            "use server"
-            await signOut({ redirectTo: "/auth/login" })
-          }}
-        >
+        <form action={signOutAction}>
           <Button type="submit" variant="outline" size="sm">
             Sign Out
           </Button>
