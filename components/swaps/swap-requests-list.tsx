@@ -76,7 +76,44 @@ export function SwapRequestsList({ organizationId, showAll = false }: SwapReques
       if (!response.ok) throw new Error('Failed to load swap requests')
       
       const data = await response.json()
-      setSwapRequests(data.swapRequests || [])
+      console.log('Raw swap data:', data) // Debug log
+      
+      // Transform the data to match our interface
+      const transformedRequests = (data.swapRequests || []).map((request: any) => ({
+        id: request.id,
+        status: request.status,
+        notes: request.notes,
+        createdAt: request.createdAt,
+        requester: request.requester,
+        assignment: {
+          id: request.assignment.id,
+          date: request.assignment.instance.date,
+          shift: {
+            name: request.assignment.instance.shiftType.name,
+            startTime: request.assignment.instance.shiftType.startTime,
+            endTime: request.assignment.instance.shiftType.endTime,
+            subspecialty: request.assignment.instance.shiftType.requiredSubspecialtyId || 'General'
+          }
+        },
+        offers: (request.offers || []).map((offer: any) => ({
+          id: offer.id,
+          status: offer.status,
+          notes: offer.notes,
+          targetUser: offer.targetUser,
+          targetAssignment: {
+            id: offer.targetAssignment?.id || '',
+            date: offer.targetAssignment?.instance?.date || '',
+            shift: {
+              name: offer.targetAssignment?.instance?.shiftType?.name || '',
+              startTime: offer.targetAssignment?.instance?.shiftType?.startTime || '',
+              endTime: offer.targetAssignment?.instance?.shiftType?.endTime || '',
+              subspecialty: offer.targetAssignment?.instance?.shiftType?.requiredSubspecialtyId || 'General'
+            }
+          }
+        }))
+      }))
+      
+      setSwapRequests(transformedRequests)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load swap requests')
     } finally {

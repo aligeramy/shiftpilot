@@ -22,7 +22,6 @@ interface Assignment {
     startTime: string
     endTime: string
     subspecialty: string
-    equivalenceCode?: string
   }
   user: {
     id: string
@@ -71,18 +70,39 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
       
       const data = await response.json()
       
-      // Flatten assignments from all instances
+      // Handle the actual data structure from the test schedule API
       const allAssignments: Assignment[] = []
-      data.instances.forEach((instance: any) => {
-        instance.assignments.forEach((assignment: any) => {
-          allAssignments.push({
-            id: assignment.id,
-            date: assignment.date,
-            shift: assignment.shift,
-            user: assignment.user
-          })
+      
+      if (data.data?.rawSchedule && Array.isArray(data.data.rawSchedule)) {
+        // The test API returns a flat array of schedule items
+        data.data.rawSchedule.forEach((scheduleItem: any) => {
+          // Each schedule item has assignedTo array
+          if (scheduleItem.assignedTo && Array.isArray(scheduleItem.assignedTo)) {
+            scheduleItem.assignedTo.forEach((assignedUser: any, index: number) => {
+              allAssignments.push({
+                id: `${scheduleItem.date}-${scheduleItem.shiftCode}-${index}`, // Generate ID
+                date: scheduleItem.date,
+                shift: {
+                  id: scheduleItem.shiftCode,
+                  name: scheduleItem.shiftName,
+                  startTime: scheduleItem.shiftTime.includes('-') ? scheduleItem.shiftTime.split('-')[0] : '08:00',
+                  endTime: scheduleItem.shiftTime.includes('-') ? scheduleItem.shiftTime.split('-')[1] : '16:00',
+                  subspecialty: scheduleItem.requiredSubspecialty || 'General'
+                },
+                user: {
+                  id: assignedUser.email, // Use email as ID
+                  name: assignedUser.name,
+                  email: assignedUser.email,
+                  subspecialty: assignedUser.subspecialty || 'General'
+                }
+              })
+            })
+          }
         })
-      })
+      } else {
+        console.error('Invalid data structure received:', data)
+        throw new Error('Invalid data structure received from API')
+      }
       
       // Sort by date and then by shift start time
       allAssignments.sort((a, b) => {
@@ -105,15 +125,23 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
       setError(null)
       
       const response = await fetch(
-        `/api/swaps/eligible-partners?assignmentId=${assignment.id}${
-          assignment.shift.equivalenceCode ? `&equivalenceCode=${assignment.shift.equivalenceCode}` : ''
-        }`
+        `/api/swaps/eligible-partners?assignmentId=${assignment.id}`
       )
       
       if (!response.ok) throw new Error('Failed to find eligible partners')
       
       const data = await response.json()
-      setEligiblePartners(data.eligiblePartners)
+      console.log('Eligible partners data:', data) // Debug log
+      
+      // The eligible partners API should return actual eligible partners
+      // For now, let's handle both potential formats
+      if (data.eligiblePartners && Array.isArray(data.eligiblePartners)) {
+        setEligiblePartners(data.eligiblePartners)
+      } else {
+        // If no eligible partners found, show empty list
+        console.warn('No eligible partners found or invalid format')
+        setEligiblePartners([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to find eligible partners')
       setEligiblePartners([])

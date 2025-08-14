@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const assignmentId = url.searchParams.get('assignmentId')
-    const equivalenceCode = url.searchParams.get('equivalenceCode')
 
     if (!assignmentId) {
       return NextResponse.json(
@@ -31,19 +30,7 @@ export async function GET(request: NextRequest) {
       include: {
         instance: {
           include: {
-            shiftType: {
-              select: {
-                id: true,
-                name: true,
-                startTime: true,
-                endTime: true,
-                requiredSubspecialty: true,
-                equivalenceCode: true,
-                allowAny: true,
-                requiredSubspecialtyId: true,
-                namedAllowlist: true
-              }
-            }
+            shiftType: true
           }
         },
         user: {
@@ -71,12 +58,33 @@ export async function GET(request: NextRequest) {
     const shiftDate = assignment.instance.date
     const shift = assignment.instance.shiftType
 
-    // Find all assignments on the same date in the same schedule instance
+    // Get all shift types that are equivalent to this one (for swap purposes)
+    // For now, we'll consider shifts with the same subspecialty requirement as equivalent
+    const equivalentShiftTypes = await prisma.shiftType.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+        OR: [
+          { id: shift.id }, // Same shift type
+          { 
+            AND: [
+              { requiredSubspecialtyId: shift.requiredSubspecialtyId },
+              { requiredSubspecialtyId: { not: null } }
+            ]
+          }, // Same subspecialty requirement
+          { allowAny: true } // Any shift that allows any subspecialty
+        ]
+      }
+    })
+
+    const equivalentShiftTypeIds = equivalentShiftTypes.map(st => st.id)
+
+    // Find all assignments on the same date that could potentially be swapped
     const potentialSwaps = await prisma.scheduleAssignment.findMany({
       where: {
         instance: {
           organizationId: session.user.organizationId,
-          date: shiftDate
+          date: shiftDate,
+          shiftTypeId: { in: equivalentShiftTypeIds }
         },
         userId: { not: assignment.userId }, // Exclude the requester
         user: {
@@ -88,19 +96,7 @@ export async function GET(request: NextRequest) {
       include: {
         instance: {
           include: {
-            shiftType: {
-              select: {
-                id: true,
-                name: true,
-                startTime: true,
-                endTime: true,
-                requiredSubspecialty: true,
-                equivalenceCode: true,
-                allowAny: true,
-                requiredSubspecialtyId: true,
-                namedAllowlist: true
-              }
-            }
+            shiftType: true
           }
         },
         user: {
@@ -128,11 +124,8 @@ export async function GET(request: NextRequest) {
       // Check if it's the same shift type
       const isSameShiftType = shift.id === targetShift.id
 
-      // Check if they're in the same equivalence set (if specified)
-      let isInEquivalenceSet = false
-      if (equivalenceCode && shift.equivalenceCode && targetShift.equivalenceCode) {
-        isInEquivalenceSet = shift.equivalenceCode === targetShift.equivalenceCode
-      }
+      // Check if they're equivalent (same subspecialty requirement)
+      const isEquivalentType = shift.requiredSubspecialtyId === targetShift.requiredSubspecialtyId
 
       // Check if the requester can work the target shift
       const canRequesterWorkTarget = await checkEligibility(
@@ -151,7 +144,6 @@ export async function GET(request: NextRequest) {
         assignment.userId,
         shiftDate,
         targetShift,
-        assignment.instanceId,
         session.user.organizationId,
         [potentialSwap.id] // Exclude the swap target assignment
       )
@@ -160,14 +152,13 @@ export async function GET(request: NextRequest) {
         targetUser.id,
         shiftDate,
         shift,
-        assignment.instanceId,
         session.user.organizationId,
         [assignment.id] // Exclude the original assignment
       )
 
       const hasConflicts = requesterConflicts.length > 0 || targetConflicts.length > 0
 
-      if ((isSameShiftType || isInEquivalenceSet) && 
+      if ((isSameShiftType || isEquivalentType) && 
           canRequesterWorkTarget && 
           canTargetWorkRequester) {
         eligiblePartners.push({
@@ -182,7 +173,7 @@ export async function GET(request: NextRequest) {
             canRequesterWorkTarget,
             canTargetWorkRequester,
             isSameShiftType,
-            isInEquivalenceSet
+            isInEquivalenceSet: isEquivalentType
           }
         })
       }
@@ -206,7 +197,6 @@ async function checkTimeConflicts(
   userId: string,
   date: Date,
   shift: any,
-  instanceId: string,
   organizationId: string,
   excludeAssignmentIds: string[] = []
 ): Promise<any[]> {

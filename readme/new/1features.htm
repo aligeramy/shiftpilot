@@ -1,0 +1,265 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=ProgId content=Excel.Sheet>
+<meta name=Generator content="Microsoft Excel 15">
+<link id=Main-File rel=Main-File href="../as.htm">
+<link rel=File-List href=filelist.xml>
+<link rel=Stylesheet href=stylesheet.css>
+<style>
+<!--table
+	{mso-displayed-decimal-separator:"\.";
+	mso-displayed-thousand-separator:"\,";}
+@page
+	{margin:1.0in .75in 1.0in .75in;
+	mso-header-margin:.5in;
+	mso-footer-margin:.5in;}
+-->
+</style>
+<![if !supportTabStrip]><script language="JavaScript">
+<!--
+function fnUpdateTabs()
+ {
+  if (parent.window.g_iIEVer>=4) {
+   if (parent.document.readyState=="complete"
+    && parent.frames['frTabs'].document.readyState=="complete")
+   parent.fnSetActiveSheet(0);
+  else
+   window.setTimeout("fnUpdateTabs();",150);
+ }
+}
+
+if (window.name!="frSheet")
+ window.location.replace("../as.htm");
+else
+ fnUpdateTabs();
+//-->
+</script>
+<![endif]>
+</head>
+
+<body link=blue vlink=purple>
+
+<table border=0 cellpadding=0 cellspacing=0 width=1265 style='border-collapse:
+ collapse;table-layout:fixed;width:948pt'>
+ <col width=208 style='mso-width-source:userset;mso-width-alt:6656;width:156pt'>
+ <col width=291 style='mso-width-source:userset;mso-width-alt:9301;width:218pt'>
+ <col width=208 span=3 style='mso-width-source:userset;mso-width-alt:6656;
+ width:156pt'>
+ <col width=71 span=2 style='width:53pt'>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 class=xl65 width=208 style='height:15.0pt;width:156pt'>Feature
+  / Deliverable</td>
+  <td class=xl65 width=291 style='border-left:none;width:218pt'>Description</td>
+  <td class=xl65 width=208 style='border-left:none;width:156pt'>Included in MVP</td>
+  <td class=xl65 width=208 style='border-left:none;width:156pt'>Included in v1
+  / later</td>
+  <td class=xl65 width=208 style='border-left:none;width:156pt'>Dependencies /
+  Notes</td>
+  <td width=71 style='width:53pt'></td>
+  <td width=71 style='width:53pt'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Year-long schedule generation</td>
+  <td>Generate an entire year respecting vacations, FT<span style='display:
+  none'>E/PT rules, eligibility, and fairness.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td colspan=3 style='mso-ignore:colspan'>Requires roster, shift catalog,
+  vacation/PT inputs.</td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Month-only generation</td>
+  <td>Support month-by-month generation for testing<span style='display:none'>
+  or incremental rollout.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>Same engine, limited scope.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Vacation intake (ranked choices)</td>
+  <td>Users submit 3 ranked vacation weeks per mont<span style='display:none'>h;
+  engine resolves fairly.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>Fairness ledger tie-breaks.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>PT day allocation (auto-assign)</td>
+  <td>Auto-balance part-time days per FTE across week<span style='display:none'>days.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>Weekday balance limits.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>PT day selection (user-pick mode)</td>
+  <td colspan=2 style='mso-ignore:colspan'>Users pick PT days; UI enforces
+  weekday balance.</td>
+  <td>v1</td>
+  <td colspan=2 style='mso-ignore:colspan'>Toggle between auto vs user-pick per
+  group.</td>
+  <td></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Subspecialty eligibility mapping</td>
+  <td>Shift types restricted to eligible subspecialties or<span
+  style='display:none'> named users.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td colspan=2 style='mso-ignore:colspan'>From ‘Shifts’ sheet &amp; admin
+  overrides.</td>
+  <td></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Named eligibility exceptions</td>
+  <td>Certain shifts (e.g., MA1 subset, Coiling) restricte<span
+  style='display:none'>d to specific rads.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>Requires named lists from admin.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Swap (same shift type, same day)</td>
+  <td>Initiate swap with an eligible counterpart for th<span style='display:
+  none'>e same shift/day.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td colspan=2 style='mso-ignore:colspan'>Sequential notifications to
+  candidates.</td>
+  <td></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Swap (equivalent shift types, multi<span
+  style='display:none'>-target)</span></td>
+  <td colspan=2 style='mso-ignore:colspan'>Swap across defined equivalence
+  sets; offer to multiple targets sequentially.</td>
+  <td>v1</td>
+  <td>Needs Equivalence Set config.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Giveaway (weekend call, etc.)</td>
+  <td>Give away allowed shift types to eligible pool (se<span style='display:
+  none'>quential offers).</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td colspan=2 style='mso-ignore:colspan'>List of giveaway-eligible shifts
+  required.</td>
+  <td></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Away windows</td>
+  <td colspan=2 style='mso-ignore:colspan'>Block receiving swap/giveaway
+  requests on specified dates.</td>
+  <td>v1</td>
+  <td>Per-user setting.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Admin overrides + local re-balance</td>
+  <td>Manual edits with local re-balancing to keep fair<span style='display:
+  none'>ness.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>Audit trail for changes.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>One-way Google Calendar sync</td>
+  <td>Push published assignments to each user’s Goog<span style='display:none'>le
+  Calendar.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>OAuth per user; ICS fallback.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Reporting: monthly CSV + YTD</td>
+  <td>Per-user shift counts &amp; $ totals; group roll-ups; Y<span
+  style='display:none'>TD totals.</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td colspan=2 style='mso-ignore:colspan'>Dollar value table needed for $
+  totals.</td>
+  <td></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Reporting: PDF outputs</td>
+  <td colspan=2 style='mso-ignore:colspan'>Nicely formatted PDFs for bookkeeper
+  and leadership.</td>
+  <td>v1</td>
+  <td>Branding and summary pages.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Audit logging</td>
+  <td>Who changed what, when (engine runs, override<span style='display:none'>s,
+  approvals).</span></td>
+  <td>MVP</td>
+  <td></td>
+  <td>Immutable log entries.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Resident-call plan (free)</td>
+  <td colspan=2 style='mso-ignore:colspan'>Lightweight plan targeting residency
+  call scheduling.</td>
+  <td>v1</td>
+  <td>Go-to-market channel.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Billing (per-group or per-user)</td>
+  <td colspan=2 style='mso-ignore:colspan'>Stripe-based subscriptions and plan
+  management.</td>
+  <td>v1</td>
+  <td>Pricing model decision.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>Optimizer (OR-Tools)</td>
+  <td colspan=2 style='mso-ignore:colspan'>Constraint programming solver for
+  tighter optimality.</td>
+  <td>v1.5+</td>
+  <td>Toggle vs heuristic engine.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>AI linting (suggested fixes)</td>
+  <td colspan=2 style='mso-ignore:colspan'>Post-gen checks suggesting swaps to
+  reduce risk/fatigue.</td>
+  <td>v1.5+</td>
+  <td>Optional and explainable.</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <tr height=20 style='height:15.0pt'>
+  <td height=20 style='height:15.0pt'>AI Agent in Onboarding</td>
+  <td colspan=2 style='mso-ignore:colspan'>Helps users set up their account
+  rules using natural language.</td>
+  <td>v1</td>
+  <td>Structured for AI from start</td>
+  <td colspan=2 style='mso-ignore:colspan'></td>
+ </tr>
+ <![if supportMisalignedColumns]>
+ <tr height=0 style='display:none'>
+  <td width=208 style='width:156pt'></td>
+  <td width=291 style='width:218pt'></td>
+  <td width=208 style='width:156pt'></td>
+  <td width=208 style='width:156pt'></td>
+  <td width=208 style='width:156pt'></td>
+  <td width=71 style='width:53pt'></td>
+  <td width=71 style='width:53pt'></td>
+ </tr>
+ <![endif]>
+</table>
+
+</body>
+
+</html>

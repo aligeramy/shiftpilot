@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(swapRequests)
+    return NextResponse.json({ swapRequests })
   } catch (error) {
     console.error('Error fetching swap requests:', error)
     return NextResponse.json(
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     const { assignmentId, notes, equivalenceCode } = body
 
     // Verify the assignment belongs to the requesting user
-    const assignment = await db.scheduleAssignment.findFirst({
+    const assignment = await prisma.scheduleAssignment.findFirst({
       where: {
         id: assignmentId,
         userId: session.user.id,
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if there's already an open swap request for this assignment
-    const existingSwap = await db.swapRequest.findFirst({
+    const existingSwap = await prisma.swapRequest.findFirst({
       where: {
         assignmentId,
         status: 'OPEN'

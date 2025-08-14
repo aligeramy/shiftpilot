@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function HomePageClient() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [shouldRedirect, setShouldRedirect] = useState(false)
 
   useEffect(() => {
     checkOrganizationStatus()
@@ -28,7 +27,6 @@ export function HomePageClient() {
       // If user has no organization or onboarding is incomplete, redirect to onboarding
       if (!data.organization || !data.organization.onboardingComplete) {
         console.log('[HomePageClient] Redirecting to onboarding')
-        setShouldRedirect(true)
         router.push('/onboarding')
         return
       }
@@ -43,7 +41,7 @@ export function HomePageClient() {
   }
 
   // Show loading state while checking organization status
-  if (isLoading || shouldRedirect) {
+  if (isLoading) {
     return (
       <DashboardPage
         customBreadcrumbs={[
