@@ -24,8 +24,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-main/10 via-brand-main/5 to-background p-4">
-      <div className="min-h-[calc(100vh-2rem)] bg-background/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-brand-main to-brand-main p-4">
+      <div className="max-h-[calc(100vh-2rem)] bg-background/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-border/50 overflow-hidden relative">
         <SidebarProvider>
           <AppSidebar user={user} />
           <SidebarInset className="flex flex-col min-h-[calc(100vh-2rem)]">

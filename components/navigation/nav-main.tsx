@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { ChevronRight } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useNavigationStore } from "@/lib/stores/navigation-store"
@@ -29,7 +30,7 @@ export function NavMain({
   const { toggleExpanded, isItemExpanded, isUrlActive } = useNavigationStore()
 
   return (
-    <SidebarGroup>
+    <SidebarGroup suppressHydrationWarning>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {

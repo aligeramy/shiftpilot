@@ -14,12 +14,14 @@ interface NavigationState {
   isUrlActive: (url: string) => boolean
 }
 
+const DEFAULT_EXPANDED_ITEMS: Record<string, boolean> = {
+  'Dashboard': true, // Dashboard expanded by default
+}
+
 export const useNavigationStore = create<NavigationState>()(
   persist(
     (set, get) => ({
-      expandedItems: {
-        'Dashboard': true, // Dashboard expanded by default
-      },
+      expandedItems: DEFAULT_EXPANDED_ITEMS,
       activeUrl: '/home',
       
       toggleExpanded: (itemTitle: string) => {
@@ -45,7 +47,7 @@ export const useNavigationStore = create<NavigationState>()(
       },
       
       isItemExpanded: (itemTitle: string) => {
-        return get().expandedItems[itemTitle] ?? false
+        return get().expandedItems[itemTitle] ?? (DEFAULT_EXPANDED_ITEMS as Record<string, boolean>)[itemTitle] ?? false
       },
       
       isUrlActive: (url: string) => {
