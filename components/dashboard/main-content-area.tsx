@@ -16,7 +16,7 @@ export function MainContentArea({
 }: MainContentAreaProps) {
   return (
     <motion.div 
-      className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min flex items-center justify-center"
+      className="bg-background/10 flex-1 rounded-xl flex items-center justify-center p-0 mb-10"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ 
@@ -28,7 +28,7 @@ export function MainContentArea({
       {children || (
         <div className="text-center">
           <motion.h2 
-            className="text-2xl font-semibold text-foreground mb-4"
+            className="text-2xl font-semibold text-foreground mb-2 text-center h-full flex-1 flex items-center justify-center"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.3 }}
@@ -37,7 +37,7 @@ export function MainContentArea({
             {title}
           </motion.h2>
           <motion.p 
-            className="text-muted-foreground"
+            className="text-foreground/50 text-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.3 }}

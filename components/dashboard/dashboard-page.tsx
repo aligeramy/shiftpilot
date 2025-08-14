@@ -22,16 +22,16 @@ export function DashboardPage({
   const breadcrumbs = customBreadcrumbs || generateBreadcrumbs(pathname)
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <DashboardHeader 
         breadcrumbItems={breadcrumbs}
         userName={session?.user?.name || undefined}
         userEmail={session?.user?.email || undefined}
       />
       
-      <div className="flex flex-1 flex-col gap-4 p-4">
-        {children}
+      <div className="flex-1 gap-4 flex flex-col overflow-y-auto min-h-0  p-4">
+          {children}
       </div>
-    </>
+    </div>
   )
 }

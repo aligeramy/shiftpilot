@@ -12,6 +12,7 @@ export default function HomePage() {
     >
       <StatsGrid />
       <MainContentArea />
+ 
     </DashboardPage>
   )
 }
