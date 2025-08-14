@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/sidebar"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
+import { GradientBackground } from "@/components/ui/gradient-background"
 
 export default async function DashboardLayout({
   children,
@@ -32,7 +33,7 @@ export default async function DashboardLayout({
   // User is fetched server-side and passed to sidebar and pages via props/components
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-brand-main to-brand-light p-4">
+    <GradientBackground>
       <div className="h-[calc(100vh-2rem)] bg-transparent backdrop-blur-sm rounded-2xl shadow-2xl border border-border/20 ring-1 ring-foreground/3 relative flex overflow-hidden">
         <SidebarProvider>
           <AppSidebar user={user} />
@@ -41,6 +42,6 @@ export default async function DashboardLayout({
           </SidebarInset>
         </SidebarProvider>
       </div>
-    </div>
+    </GradientBackground>
   );
 }
