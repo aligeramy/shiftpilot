@@ -2,16 +2,25 @@ import { WithDashboardLayout } from "@/components/dashboard/with-dashboard-layou
 import { StatsGrid } from "@/components/dashboard/stats-grid"
 import { MainContentArea } from "@/components/dashboard/main-content-area"
 
-export default async function HomePage() {
+export default async function AnalyticsPage() {
+  const analyticsStats = {
+    activeShifts: 32,
+    staffOnline: 24,
+    coverageRate: "97%"
+  }
+
   return (
     <WithDashboardLayout
       customBreadcrumbs={[
         { label: "Dashboard", href: "/home" },
-        { label: "Overview" }
+        { label: "Analytics" }
       ]}
     >
-      <StatsGrid />
-      <MainContentArea />
+      <StatsGrid stats={analyticsStats} />
+      <MainContentArea 
+        title="Analytics Dashboard"
+        subtitle="Detailed insights into your radiology scheduling performance."
+      />
     </WithDashboardLayout>
   )
 }
