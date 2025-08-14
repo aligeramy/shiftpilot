@@ -21,17 +21,17 @@ export function StatsGrid({
       <StatsCard 
         title="Active Shifts" 
         value={stats.activeShifts}
-        icon={<Clock className="h-6 w-6 text-brand-light" />}
+        icon={<Clock className="h-6 w-6 text-brand-primary" />}
       />
       <StatsCard 
         title="Staff Online" 
         value={stats.staffOnline}
-        icon={<Users className="h-6 w-6 text-brand-light" />}
+        icon={<Users className="h-6 w-6 text-brand-primary" />}
       />
       <StatsCard 
         title="Coverage Rate" 
         value={stats.coverageRate}
-        icon={<TrendingUp className="h-6 w-6 text-brand-light" />}
+        icon={<TrendingUp className="h-6 w-6 text-brand-primary" />}
       />
     </div>
   )
