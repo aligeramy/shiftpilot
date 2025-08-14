@@ -6,7 +6,9 @@ import {
   ChevronsUpDown,
   CreditCard,
   LogOut,
+  Moon,
   Sparkles,
+  Sun,
 } from "lucide-react"
 
 import {
@@ -30,6 +32,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import type { User } from "@/lib/types/navigation"
+import { useTheme } from "next-themes"
+import { signOutAction } from "@/lib/actions/auth-actions"
 
 export function NavUser({
   user,
@@ -37,6 +41,7 @@ export function NavUser({
   user: User
 }) {
   const { isMobile } = useSidebar()
+  const { theme, setTheme } = useTheme()
 
   return (
     <SidebarMenu>
@@ -105,9 +110,17 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
-              Log out
+            <DropdownMenuItem onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+              {theme === "light" ? <Moon /> : <Sun />}
+              Toggle theme
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <form action={signOutAction} className="w-full">
+                <button type="submit" className="flex w-full items-center gap-2">
+                  <LogOut />
+                  Log out
+                </button>
+              </form>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

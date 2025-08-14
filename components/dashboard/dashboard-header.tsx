@@ -1,9 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { DashboardBreadcrumb } from "./dashboard-breadcrumb"
-import { signOutAction } from "@/lib/actions/auth-actions"
 
 interface BreadcrumbItem {
   label: string
@@ -22,7 +19,7 @@ export function DashboardHeader({
   userEmail 
 }: DashboardHeaderProps) {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 border-b border-border/50 backdrop-blur">
       <div className="flex items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator
@@ -32,15 +29,9 @@ export function DashboardHeader({
         <DashboardBreadcrumb items={breadcrumbItems} />
       </div>
       <div className="ml-auto flex items-center gap-4 px-4">
-        <span className="text-muted-foreground text-sm">
+        <span className="text-foreground/50 text-sm">
           Welcome, {userName || userEmail}
         </span>
-        <ThemeToggle />
-        <form action={signOutAction}>
-          <Button type="submit" variant="outline" size="sm">
-            Sign Out
-          </Button>
-        </form>
       </div>
     </header>
   )
