@@ -132,3 +132,126 @@
   }
 }
 
+/* Gradient Background Animations */
+.gradient-animation {
+  background: linear-gradient(45deg, 
+    #3b82f6 0%,     /* blue-500 */
+    #1d4ed8 25%,    /* blue-700 */
+    #2563eb 50%,    /* blue-600 */
+    #1e40af 75%,    /* blue-800 */
+    #60a5fa 100%    /* blue-400 */
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 20s ease infinite;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
+
+.gradient-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%);
+  top: -200px;
+  left: -200px;
+  animation: float1 25s ease-in-out infinite;
+}
+
+.gradient-orb-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(29, 78, 216, 0.6) 0%, transparent 70%);
+  top: 40%;
+  right: -175px;
+  animation: float2 30s ease-in-out infinite;
+}
+
+.gradient-orb-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.7) 0%, transparent 70%);
+  bottom: -150px;
+  left: 20%;
+  animation: float3 22s ease-in-out infinite;
+}
+
+.gradient-orb-4 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.5) 0%, transparent 70%);
+  top: 20%;
+  left: 60%;
+  animation: float4 28s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(100px, -50px) scale(1.1); }
+  50% { transform: translate(-50px, 100px) scale(0.9); }
+  75% { transform: translate(150px, 50px) scale(1.05); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-80px, 120px) scale(0.95); }
+  50% { transform: translate(120px, -80px) scale(1.1); }
+  75% { transform: translate(-100px, -60px) scale(1.05); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(120px, -100px) scale(1.08); }
+  50% { transform: translate(-80px, -120px) scale(0.92); }
+  75% { transform: translate(60px, 80px) scale(1.02); }
+}
+
+@keyframes float4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-120px, 80px) scale(0.98); }
+  50% { transform: translate(80px, 120px) scale(1.12); }
+  75% { transform: translate(-60px, -100px) scale(0.95); }
+}
+
+@keyframes wave-slow {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(-25%) translateZ(0) scaleY(0.55); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+}
+
+@keyframes wave-medium {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(-25%) translateZ(0) scaleY(0.75); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+}
+
+@keyframes wave-fast {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(-25%) translateZ(0) scaleY(0.85); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+}
+
+.animate-wave-slow {
+  animation: wave-slow 15s ease-in-out infinite;
+}
+
+.animate-wave-medium {
+  animation: wave-medium 10s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.animate-wave-fast {
+  animation: wave-fast 7s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
