@@ -35,43 +35,29 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
       ],
     },
     {
-      title: "Schedule Calendar",
+      title: "Scheduling",
       url: "/schedule",
       icon: Calendar,
       items: [
         {
-          title: "View Schedule",
+          title: "Schedule Calendar",
           url: "/schedule",
           description: "Interactive calendar view of generated schedules",
         },
-      ],
-    },
-    {
-      title: "Vacation Preferences",
-      url: "/preferences",
-      icon: Calendar,
-      items: [
         {
-          title: "Manage Preferences",
+          title: "Vacation Preferences",
           url: "/preferences",
           description: "Collect and manage radiologist vacation preferences",
         },
-      ],
-    },
-    {
-      title: "Shift Swaps",
-      url: "/swaps",
-      icon: ArrowRightLeft,
-      items: [
         {
-          title: "Manage Swaps",
+          title: "Shift Swaps",
           url: "/swaps",
           description: "Request and approve shift exchanges",
         },
       ],
     },
     {
-      title: "Reports",
+      title: "Reports & Analytics",
       url: "/fairness",
       icon: BarChart3,
       items: [
@@ -93,12 +79,12 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
       icon: Settings2,
       items: [
         {
-          title: "Overview",
+          title: "Organization Settings",
           url: "/settings",
           description: "Organization, subspecialties, shift types, and staff",
         },
         {
-          title: "Onboarding",
+          title: "Onboarding Setup",
           url: "/onboarding",
           description: "Organization setup and configuration",
         },

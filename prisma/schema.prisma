@@ -30,6 +30,10 @@ model User {
   vacationPreferences VacationPreference[]
   notifications     Notification[]
   scheduleAssignments ScheduleAssignment[]
+  
+  // Swap system
+  swapRequests      SwapRequest[] @relation("SwapRequester")
+  swapOffers        SwapOffer[]   @relation("SwapOfferTarget")
 
   @@map("users")
 }
@@ -262,6 +266,10 @@ model ScheduleAssignment {
   assignmentType  AssignmentType @default(GENERATED)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  
+  // Swap relations
+  swapRequests    SwapRequest[]
+  swapOffers      SwapOffer[] @relation("SwapOfferAssignment")
 
   @@unique([instanceId, userId])
   @@map("schedule_assignments")
@@ -271,4 +279,55 @@ enum AssignmentType {
   GENERATED
   MANUAL
   SWAPPED
+}
+
+// Swap System
+model SwapRequest {
+  id              String   @id @default(cuid())
+  requesterId     String   @map("requester_id")
+  requester       User     @relation("SwapRequester", fields: [requesterId], references: [id])
+  assignmentId    String   @map("assignment_id")
+  assignment      ScheduleAssignment @relation(fields: [assignmentId], references: [id])
+  equivalenceCode String?  @map("equivalence_code") // For cross-type swaps
+  status          SwapStatus @default(OPEN)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  offers          SwapOffer[]
+
+  @@map("swap_requests")
+}
+
+enum SwapStatus {
+  OPEN
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+model SwapOffer {
+  id              String   @id @default(cuid())
+  swapRequestId   String   @map("swap_request_id")
+  swapRequest     SwapRequest @relation(fields: [swapRequestId], references: [id], onDelete: Cascade)
+  targetUserId    String   @map("target_user_id")
+  targetUser      User     @relation("SwapOfferTarget", fields: [targetUserId], references: [id])
+  targetAssignmentId String? @map("target_assignment_id")
+  targetAssignment ScheduleAssignment? @relation("SwapOfferAssignment", fields: [targetAssignmentId], references: [id])
+  status          OfferStatus @default(PENDING)
+  sentAt          DateTime?
+  respondedAt     DateTime?
+  response        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("swap_offers")
+}
+
+enum OfferStatus {
+  PENDING
+  DECLINED
+  ACCEPTED
+  CANCELLED
+  TIMEOUT
 }
