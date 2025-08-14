@@ -108,12 +108,12 @@ export async function seedDatabase() {
               subspecialtyMap.get(shift.subspecialty)?.id : null,
             allowAny: !shift.subspecialty && !shift.named,
             namedAllowlist: shift.named ? shift.named.join(',') : null,
-            // Recurrence - default to weekdays
+            // Recurrence - handle different patterns
             monday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL",
-            tuesday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL", 
+            tuesday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL" || shift.recurrence === "TUE_THU_FRI", 
             wednesday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL",
-            thursday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL",
-            friday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL",
+            thursday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL" || shift.recurrence === "TUE_THU_FRI",
+            friday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL" || shift.recurrence === "TUE_THU_FRI",
             saturday: shift.recurrence === "WEEKENDS" || shift.recurrence === "ALL",
             sunday: shift.recurrence === "WEEKENDS" || shift.recurrence === "ALL"
           }
@@ -251,15 +251,17 @@ export async function clearDatabase() {
   console.log('[SEED] Clearing existing data...')
   
   // Delete in correct order to avoid foreign key constraints
+  await prisma.swapOffer.deleteMany()
+  await prisma.swapRequest.deleteMany()
   await prisma.vacationPreference.deleteMany()
   await prisma.scheduleAssignment.deleteMany() 
   await prisma.scheduleInstance.deleteMany()
   await prisma.notification.deleteMany()
   await prisma.radiologyProfile.deleteMany()
-  await prisma.equivalenceSet.deleteMany()
-  await prisma.fteBand.deleteMany()
   await prisma.shiftType.deleteMany()
   await prisma.subspecialty.deleteMany()
+  await prisma.session.deleteMany()
+  await prisma.account.deleteMany()
   await prisma.user.deleteMany()
   await prisma.organization.deleteMany()
   

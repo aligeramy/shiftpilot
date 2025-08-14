@@ -226,11 +226,22 @@ export class ScheduleGenerator {
     const radiologistWorkload = new Map<string, number>() // Track assignments per radiologist
     const { blocks: vacationBlocks } = this.calculateAwardedVacations(data.radiologists)
     
+    // CRITICAL FIX: Track which instances have been assigned
+    const assignedInstances = new Set<string>()
+    
+    // CRITICAL FIX: Track daily assignments per radiologist to prevent double-booking
+    const dailyAssignments = new Map<string, Set<string>>() // userId -> Set of dates (ISO string)
+    
+    // NEW: Calculate part-time days for each radiologist
+    const ptDaysMap = this.calculatePTDays(data.radiologists)
+    
     console.log(`[GENERATOR] Starting assignment for ${data.instances.length} instances`)
+    console.log(`[GENERATOR] Calculated PT days for ${ptDaysMap.size} radiologists`)
 
     // Initialize workload tracking
     data.radiologists.forEach((rad) => {
       radiologistWorkload.set(rad.id, 0)
+      dailyAssignments.set(rad.id, new Set())
     })
 
     // Sort instances by difficulty (hardest constraints first)
@@ -241,7 +252,13 @@ export class ScheduleGenerator {
 
     // Assign each instance
     for (const instance of sortedInstances) {
-      const candidates = this.findEligibleCandidates(instance, data.radiologists, vacationBlocks)
+      // CRITICAL FIX: Skip if this instance is already assigned
+      if (assignedInstances.has(instance.id)) {
+        console.log(`[GENERATOR] Instance ${instance.id} already assigned, skipping`)
+        continue
+      }
+      
+      const candidates = this.findEligibleCandidates(instance, data.radiologists, vacationBlocks, dailyAssignments, ptDaysMap)
       
       if (candidates.length === 0) {
         console.warn(`[GENERATOR] No eligible candidates for ${instance.shiftType.code} on ${instance.date}`)
@@ -269,6 +286,13 @@ export class ScheduleGenerator {
         constraints: this.getConstraintsSatisfied(selectedCandidate.radiologist, instance)
       })
 
+      // CRITICAL FIX: Mark instance as assigned
+      assignedInstances.add(instance.id)
+      
+      // CRITICAL FIX: Mark date as occupied for this radiologist
+      const dateStr = new Date(instance.date).toISOString().split('T')[0]
+      dailyAssignments.get(selectedCandidate.radiologist.id)?.add(dateStr)
+
       // Update workload
       const currentWorkload = radiologistWorkload.get(selectedCandidate.radiologist.id) || 0
       radiologistWorkload.set(selectedCandidate.radiologist.id, currentWorkload + 1)
@@ -281,7 +305,9 @@ export class ScheduleGenerator {
   private findEligibleCandidates(
     instance: InstanceWithShift,
     radiologists: RadiologistWithProfile[],
-    vacationBlocks: Map<string, Date[]>
+    vacationBlocks: Map<string, Date[]>,
+    dailyAssignments: Map<string, Set<string>>,
+    ptDaysMap: Map<string, Set<string>>
   ): RadiologistWithProfile[] {
     return radiologists.filter(rad => {
       // Check subspecialty eligibility
@@ -300,15 +326,40 @@ export class ScheduleGenerator {
         return false
       }
 
-      // Check vacation conflicts
+      // Check vacation conflicts - IMPROVED: block entire vacation weeks
       const vacations = vacationBlocks.get(rad.id) || []
       const instanceDate = new Date(instance.date)
-      if (vacations.some(vacDate => this.isSameWeek(vacDate, instanceDate))) {
+      
+      // Check if instance date falls within any vacation week
+      for (const vacDate of vacations) {
+        if (this.isDateInVacationWeek(instanceDate, vacDate)) {
+          console.log(`[GENERATOR] Blocking ${rad.email} from ${instance.shiftType.code} on ${instanceDate.toDateString()} - vacation week`)
+          return false
+        }
+      }
+      
+      // Also check if instance date exactly matches any vacation day
+      const instanceDateStr = instanceDate.toISOString().split('T')[0]
+      const vacDateStrs = vacations.map(d => d.toISOString().split('T')[0])
+      if (vacDateStrs.includes(instanceDateStr)) {
+        console.log(`[GENERATOR] Blocking ${rad.email} from ${instance.shiftType.code} on ${instanceDate.toDateString()} - vacation day`)
         return false
       }
 
-      // Check for same-day conflicts (simplified - would need more complex logic)
-      // For now, assume one shift per day per person
+      // CRITICAL FIX: Check for same-day conflicts - one shift per day per person
+      const dateStr = new Date(instance.date).toISOString().split('T')[0]
+      const userDailyAssignments = dailyAssignments.get(rad.id)
+      if (userDailyAssignments?.has(dateStr)) {
+        // This radiologist already has a shift on this day
+        return false
+      }
+
+      // NEW: Check PT day conflicts - block assignments on part-time days
+      const userPTDays = ptDaysMap.get(rad.id)
+      if (userPTDays?.has(dateStr)) {
+        // This radiologist has a part-time day on this date
+        return false
+      }
 
       return true
     })
@@ -319,27 +370,46 @@ export class ScheduleGenerator {
     instance: InstanceWithShift,
     workload: Map<string, number>
   ): number {
-    let score = 1.0
+    let score = 0.5 // Start neutral
 
-    // Fairness factor - prefer radiologists with lower workload
+    // CRITICAL: Strong fairness factor - heavily prefer radiologists with lower workload
     const currentWorkload = workload.get(radiologist.id) || 0
-    const averageWorkload = Array.from(workload.values()).reduce((a, b) => a + b, 0) / workload.size
-    score += (averageWorkload - currentWorkload) * 0.3
+    const allWorkloads = Array.from(workload.values())
+    const averageWorkload = allWorkloads.length > 0 ? allWorkloads.reduce((a, b) => a + b, 0) / allWorkloads.length : 0
+    const maxWorkload = Math.max(...allWorkloads, 0)
+    const minWorkload = Math.min(...allWorkloads, 0)
+    
+    // Normalized workload difference (0 = average, negative = below average)
+    const workloadDiff = currentWorkload - averageWorkload
+    const workloadRange = Math.max(maxWorkload - minWorkload, 1)
+    
+    // Strong penalty for high workload, strong bonus for low workload
+    score += (averageWorkload - currentWorkload) * 0.8 // Increased from 0.3
+    
+    // Additional penalty for being above average
+    if (currentWorkload > averageWorkload) {
+      score -= (workloadDiff / workloadRange) * 0.5
+    }
 
-    // Subspecialty match bonus
+    // Subspecialty match bonus (but less important than fairness)
     if (instance.shiftType.requiredSubspecialtyId === radiologist.radiologistProfile?.subspecialtyId) {
-      score += 0.4
+      score += 0.3 // Reduced from 0.4
     }
 
-    // FTE consideration - full-time radiologists get slight preference for more shifts
-    if (radiologist.radiologistProfile?.ftePercent === 100) {
-      score += 0.1
+    // FTE consideration - scale workload target by FTE
+    const ftePercent = radiologist.radiologistProfile?.ftePercent || 100
+    const fteMultiplier = ftePercent / 100.0
+    const expectedWorkload = averageWorkload * fteMultiplier
+    
+    // Prefer people who are under their expected workload
+    if (currentWorkload < expectedWorkload) {
+      score += (expectedWorkload - currentWorkload) * 0.2
     }
 
-    // Add some randomness for variety
-    score += (this.seededRandom() - 0.5) * 0.2
+    // Reduced randomness for more predictable fairness
+    score += (this.seededRandom() - 0.5) * 0.1 // Reduced from 0.2
 
-    return Math.max(0, Math.min(1, score))
+    return Math.max(0, Math.min(2, score)) // Allow scores up to 2 for very under-worked people
   }
 
   private calculateInstanceDifficulty(
@@ -399,6 +469,16 @@ export class ScheduleGenerator {
     const day = d.getDay()
     const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Monday start
     return new Date(d.setDate(diff))
+  }
+
+  private isDateInVacationWeek(instanceDate: Date, vacationDate: Date): boolean {
+    // Get the vacation week (Monday to Sunday)
+    const vacWeekStart = this.getWeekStart(vacationDate)
+    const vacWeekEnd = new Date(vacWeekStart)
+    vacWeekEnd.setDate(vacWeekStart.getDate() + 6) // Sunday
+    
+    // Check if instance date falls within this week
+    return instanceDate >= vacWeekStart && instanceDate <= vacWeekEnd
   }
 
   private getConstraintsSatisfied(
@@ -528,5 +608,92 @@ export class ScheduleGenerator {
     } catch (e) {
       console.warn('[GENERATOR] Failed to stamp vacation preference statuses:', e)
     }
+  }
+
+  private calculatePTDays(radiologists: RadiologistWithProfile[]): Map<string, Set<string>> {
+    const ptDaysMap = new Map<string, Set<string>>()
+    const year = this.config.year
+    const month = this.config.month
+    
+    // Get all weekdays in the month
+    const firstDay = new Date(year, month - 1, 1)
+    const lastDay = new Date(year, month, 0)
+    const weekdays: Date[] = []
+    
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const dayOfWeek = d.getDay()
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday = 1, Friday = 5
+        weekdays.push(new Date(d))
+      }
+    }
+    
+    radiologists.forEach(rad => {
+      const ptDays = new Set<string>()
+      const ftePercent = rad.radiologistProfile?.ftePercent || 100
+      
+      // Calculate PT days needed per month based on FTE
+      const ptDaysNeeded = this.calculatePTDaysNeeded(ftePercent)
+      
+      if (ptDaysNeeded > 0 && weekdays.length > 0) {
+        // Distribute PT days evenly throughout the month
+        // Avoid weekday bias (no more than 1 extra Friday/Monday)
+        const selectedDays = this.distributePTDaysEvenly(weekdays, ptDaysNeeded)
+        selectedDays.forEach(date => {
+          ptDays.add(date.toISOString().split('T')[0])
+        })
+        
+        console.log(`[GENERATOR] Assigned ${ptDaysNeeded} PT days to ${rad.email} (FTE: ${ftePercent}%)`)
+      }
+      
+      ptDaysMap.set(rad.id, ptDays)
+    })
+    
+    return ptDaysMap
+  }
+  
+  private calculatePTDaysNeeded(ftePercent: number): number {
+    if (ftePercent >= 100) return 0
+    if (ftePercent >= 90) return 2
+    if (ftePercent >= 80) return 4
+    if (ftePercent >= 70) return 6
+    if (ftePercent >= 60) return 8
+    return 10 // <60%
+  }
+  
+  private distributePTDaysEvenly(weekdays: Date[], ptDaysNeeded: number): Date[] {
+    if (ptDaysNeeded === 0 || weekdays.length === 0) return []
+    
+    const selectedDays: Date[] = []
+    const daysByWeekday = new Map<number, Date[]>()
+    
+    // Group dates by day of week
+    weekdays.forEach(date => {
+      const day = date.getDay()
+      if (!daysByWeekday.has(day)) {
+        daysByWeekday.set(day, [])
+      }
+      daysByWeekday.get(day)!.push(date)
+    })
+    
+    // Distribute days evenly across weekdays to avoid Friday/Monday bias
+    const weekdayKeys = Array.from(daysByWeekday.keys()).sort()
+    let dayIndex = 0
+    
+    for (let i = 0; i < ptDaysNeeded && selectedDays.length < ptDaysNeeded; i++) {
+      const weekday = weekdayKeys[dayIndex % weekdayKeys.length]
+      const daysForWeekday = daysByWeekday.get(weekday) || []
+      
+      if (daysForWeekday.length > 0) {
+        // Select a day from this weekday (spread across weeks)
+        const weekIndex = Math.floor(i / weekdayKeys.length)
+        if (weekIndex < daysForWeekday.length) {
+          selectedDays.push(daysForWeekday[weekIndex])
+        }
+      }
+      
+      dayIndex++
+    }
+    
+    return selectedDays.slice(0, ptDaysNeeded)
   }
 }

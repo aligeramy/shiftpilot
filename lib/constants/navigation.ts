@@ -71,6 +71,16 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
           url: "/testing",
           description: "Comprehensive system testing and validation",
         },
+        {
+          title: "Documentation",
+          url: "/docs",
+          description: "Complete system documentation and feature guide",
+        },
+        {
+          title: "Onboarding Guide",
+          url: "/onboarding",
+          description: "Interactive onboarding showcase with live data",
+        },
       ],
     },
     {

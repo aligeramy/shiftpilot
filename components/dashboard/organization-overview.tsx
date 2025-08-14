@@ -62,6 +62,7 @@ export function OrganizationOverview() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedSubspecialty, setSelectedSubspecialty] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'overview' | 'subspecialty'>('overview')
+  const [selectedShift, setSelectedShift] = useState<any | null>(null)
 
   // Color mapping for subspecialties and shift types
   const subspecialtyColors = {
@@ -144,6 +145,32 @@ export function OrganizationOverview() {
     if (eligibility.requiredSubspecialty) return eligibility.requiredSubspecialty.name
     if (eligibility.namedAllowlist?.length > 0) return `Named: ${eligibility.namedAllowlist.length} people`
     return 'Not configured'
+  }
+
+  const getEligibleStaff = (shift: any) => {
+    if (!data?.staff) return []
+    
+    if (shift.eligibility.allowAny) {
+      return data.staff
+    }
+    
+    if (shift.eligibility.requiredSubspecialty) {
+      return data.staff.filter(person => 
+        person.subspecialty === shift.eligibility.requiredSubspecialty.code
+      )
+    }
+    
+    if (shift.eligibility.namedAllowlist?.length > 0) {
+      return data.staff.filter(person => 
+        shift.eligibility.namedAllowlist.includes(person.email)
+      )
+    }
+    
+    return []
+  }
+
+  const handleShiftClick = (shift: any) => {
+    setSelectedShift(selectedShift?.id === shift.id ? null : shift)
   }
 
   const handleSubspecialtyClick = (subspecialtyCode: string) => {
@@ -344,22 +371,68 @@ export function OrganizationOverview() {
               </thead>
               <tbody>
                 {data.shiftTypes.map((shift) => (
-                  <tr key={shift.id} className="border-b hover:bg-slate-50">
-                    <td className="p-2 font-mono text-xs">{shift.code}</td>
-                    <td className="p-2">{shift.name}</td>
-                    <td className="p-2 font-mono text-xs">
-                      {shift.isAllDay ? 'All Day' : `${shift.startTime}-${shift.endTime}`}
-                    </td>
-                    <td className="p-2 text-xs">{getDaysOfWeek(shift.recurrence)}</td>
-                    <td className="p-2 text-xs">
-                      <Badge 
-                        variant={shift.eligibility.allowAny ? "secondary" : "outline"}
-                        className="text-xs"
-                      >
-                        {getEligibilityText(shift.eligibility)}
-                      </Badge>
-                    </td>
-                  </tr>
+                  <>
+                    <tr 
+                      key={shift.id} 
+                      className={`border-b hover:bg-slate-50 cursor-pointer transition-colors ${
+                        selectedShift?.id === shift.id ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => handleShiftClick(shift)}
+                    >
+                      <td className="p-2 font-mono text-xs">{shift.code}</td>
+                      <td className="p-2">{shift.name}</td>
+                      <td className="p-2 font-mono text-xs">
+                        {shift.isAllDay ? 'All Day' : `${shift.startTime}-${shift.endTime}`}
+                      </td>
+                      <td className="p-2 text-xs">{getDaysOfWeek(shift.recurrence)}</td>
+                      <td className="p-2 text-xs">
+                        <Badge 
+                          variant={shift.eligibility.allowAny ? "secondary" : "outline"}
+                          className="text-xs"
+                        >
+                          {getEligibilityText(shift.eligibility)}
+                        </Badge>
+                      </td>
+                    </tr>
+                    {selectedShift?.id === shift.id && (
+                      <tr className="border-b bg-blue-50">
+                        <td colSpan={5} className="p-4">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-sm">
+                              Eligible Staff ({getEligibleStaff(shift).length} people)
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {getEligibleStaff(shift).map((person) => (
+                                <div 
+                                  key={person.id} 
+                                  className="flex items-center justify-between bg-white rounded p-2 border"
+                                >
+                                  <div>
+                                    <div className="font-medium text-sm">{person.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {person.subspecialtyName} • {person.ftePercent}% FTE
+                                    </div>
+                                  </div>
+                                  <Badge 
+                                    className={`text-xs ${
+                                      subspecialtyColors[person.subspecialty as keyof typeof subspecialtyColors] || subspecialtyColors['ANY']
+                                    }`}
+                                  >
+                                    {person.subspecialty || 'ANY'}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                            {getEligibleStaff(shift).length === 0 && (
+                              <div className="text-sm text-muted-foreground italic">
+                                No eligible staff found for this shift
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>

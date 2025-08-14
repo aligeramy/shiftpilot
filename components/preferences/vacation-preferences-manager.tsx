@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 // import { VacationPreferenceForm } from './vacation-preference-form'
 import { NotificationPanel } from './notification-panel'
+import { ManualVacationSelector } from './manual-vacation-selector'
 
 interface Radiologist {
   id: string
@@ -40,6 +41,7 @@ export function VacationPreferencesManager() {
   const [targetYear, setTargetYear] = useState(new Date().getFullYear())
   const [targetMonth, setTargetMonth] = useState(new Date().getMonth() + 1)
   const [query, setQuery] = useState('')
+  const [showManualSelector, setShowManualSelector] = useState(false)
 
   useEffect(() => {
     loadRadiologists()
@@ -273,34 +275,74 @@ export function VacationPreferencesManager() {
                 <div className="text-sm text-muted-foreground">Select a radiologist on the left.</div>
               ) : (
                 <>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => generateSelectedPreferences(selectedRadiologist.id)} disabled={loading}>
-                      🎲 Generate for {selectedRadiologist.name?.split(' ')[0] || 'User'}
-                    </Button>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => generateSelectedPreferences(selectedRadiologist.id)} disabled={loading}>
+                        🎲 Generate for {selectedRadiologist.name?.split(' ')[0] || 'User'}
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant={!showManualSelector ? "default" : "outline"}
+                        onClick={() => setShowManualSelector(false)}
+                      >
+                        Auto View
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant={showManualSelector ? "default" : "outline"}
+                        onClick={() => setShowManualSelector(true)}
+                      >
+                        Manual Pick
+                      </Button>
+                    </div>
                   </div>
 
-                  <div className="grid gap-3">
-                    {(selectedRadiologist.vacationPreferences || [])
-                      .filter(p => p.year === targetYear && p.month === targetMonth)
-                      .sort((a, b) => a.rank - b.rank)
-                      .map(pref => (
-                        <div key={pref.id} className={`flex items-center justify-between rounded border px-3 py-2 ${pref.status === 'APPROVED' ? 'bg-green-50 border-green-200' : pref.status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-white/5'}`}>
-                          <div>
-                            <div className="font-medium">Choice #{pref.rank}</div>
-                            <div className="text-xs text-muted-foreground">Week {pref.weekNumber} — {new Date(pref.weekStartDate).toLocaleDateString()} to {new Date(pref.weekEndDate).toLocaleDateString()}</div>
+                  {showManualSelector ? (
+                    <ManualVacationSelector
+                      radiologistId={selectedRadiologist.id}
+                      radiologistName={selectedRadiologist.name}
+                      year={targetYear}
+                      month={targetMonth}
+                      currentPreferences={(selectedRadiologist.vacationPreferences || [])
+                        .filter(p => p.year === targetYear && p.month === targetMonth)
+                        .sort((a, b) => a.rank - b.rank)
+                        .map(pref => ({
+                          rank: pref.rank,
+                          weekNumber: pref.weekNumber,
+                          weekStartDate: pref.weekStartDate,
+                          weekEndDate: pref.weekEndDate
+                        }))}
+                      onSave={() => {
+                        loadRadiologists() // Refresh data
+                        setShowManualSelector(false) // Return to auto view
+                      }}
+                    />
+                  ) : (
+                    <div className="grid gap-3">
+                      {(selectedRadiologist.vacationPreferences || [])
+                        .filter(p => p.year === targetYear && p.month === targetMonth)
+                        .sort((a, b) => a.rank - b.rank)
+                        .map(pref => (
+                          <div key={pref.id} className={`flex items-center justify-between rounded border px-3 py-2 ${pref.status === 'APPROVED' ? 'bg-green-50 border-green-200' : pref.status === 'REJECTED' ? 'bg-red-50 border-red-200' : 'bg-white/5'}`}>
+                            <div>
+                              <div className="font-medium">Choice #{pref.rank}</div>
+                              <div className="text-xs text-muted-foreground">Week {pref.weekNumber} — {new Date(pref.weekStartDate).toLocaleDateString()} to {new Date(pref.weekEndDate).toLocaleDateString()}</div>
+                            </div>
+                            <Badge 
+                              className={pref.status === 'APPROVED' ? 'bg-green-600 text-white' : pref.status === 'REJECTED' ? 'bg-red-600 text-white' : ''}
+                              variant={pref.status === 'PENDING' ? 'outline' : 'default'}
+                            >
+                              {pref.status === 'APPROVED' ? '✓ GRANTED' : pref.status === 'REJECTED' ? '✗ REJECTED' : 'PENDING'}
+                            </Badge>
                           </div>
-                          <Badge 
-                            className={pref.status === 'APPROVED' ? 'bg-green-600 text-white' : pref.status === 'REJECTED' ? 'bg-red-600 text-white' : ''}
-                            variant={pref.status === 'PENDING' ? 'outline' : 'default'}
-                          >
-                            {pref.status === 'APPROVED' ? '✓ GRANTED' : pref.status === 'REJECTED' ? '✗ REJECTED' : 'PENDING'}
-                          </Badge>
-                        </div>
-                      ))}
-                    {(!selectedRadiologist.vacationPreferences || selectedRadiologist.vacationPreferences.filter(p => p.year === targetYear && p.month === targetMonth).length === 0) && (
-                      <div className="text-sm text-muted-foreground">No preferences yet for this month. Click Generate.</div>
-                    )}
-                  </div>
+                        ))}
+                      {(!selectedRadiologist.vacationPreferences || selectedRadiologist.vacationPreferences.filter(p => p.year === targetYear && p.month === targetMonth).length === 0) && (
+                        <div className="text-sm text-muted-foreground">No preferences yet for this month. Click Generate or use Manual Pick.</div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </CardContent>

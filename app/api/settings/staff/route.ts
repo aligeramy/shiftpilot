@@ -1,0 +1,102 @@
+/**
+ * API endpoints for staff management
+ */
+import { NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import bcrypt from 'bcryptjs'
+
+export async function POST(request: Request) {
+  try {
+    const session = await auth()
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get user's organization
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { organization: true }
+    })
+
+    if (!user?.organizationId) {
+      return NextResponse.json({ error: 'No organization found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { name, email, subspecialtyId, ftePercent } = body
+
+    if (!name || !email) {
+      return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
+    }
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    if (existingUser) {
+      return NextResponse.json({ error: 'Email already exists' }, { status: 409 })
+    }
+
+    // Validate subspecialty if provided
+    let validSubspecialtyId = null
+    if (subspecialtyId) {
+      const subspecialty = await prisma.subspecialty.findFirst({
+        where: {
+          organizationId: user.organizationId,
+          code: subspecialtyId
+        }
+      })
+      if (!subspecialty) {
+        return NextResponse.json({ error: 'Invalid subspecialty code' }, { status: 400 })
+      }
+      validSubspecialtyId = subspecialty.id
+    }
+
+    // Create user with a default password (they should change it on first login)
+    const defaultPassword = await bcrypt.hash('changeMe123!', 10)
+    
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: defaultPassword,
+        role: 'RADIOLOGIST',
+        organizationId: user.organizationId,
+        radiologistProfile: {
+          create: {
+            subspecialtyId: validSubspecialtyId,
+            ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
+          }
+        }
+      },
+      include: {
+        radiologistProfile: {
+          include: {
+            subspecialty: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      staff: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        subspecialty: newUser.radiologistProfile?.subspecialty?.code || null,
+        subspecialtyName: newUser.radiologistProfile?.subspecialty?.name || null,
+        ftePercent: newUser.radiologistProfile?.ftePercent || 100
+      }
+    })
+
+  } catch (error) {
+    console.error('[API] Failed to create staff member:', error)
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create staff member'
+    }, { status: 500 })
+  }
+}

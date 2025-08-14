@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "npx prisma generate && next build --turbopack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "curl -X POST http://localhost:3000/api/test/seed",
+    "force-reseed": "curl -X POST http://localhost:3000/api/test/force-reseed"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
