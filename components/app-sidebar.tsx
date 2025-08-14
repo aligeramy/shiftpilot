@@ -22,7 +22,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const defaultUser: User = {
     name: "John Doe",
     email: "john@shiftpilot.com",
-    avatar: "/avatars/user.jpg",
+    avatar: undefined,
   }
 
   const userData = user || defaultUser

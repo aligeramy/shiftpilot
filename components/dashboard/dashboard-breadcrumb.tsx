@@ -1,6 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -49,11 +50,8 @@ export function DashboardBreadcrumb({ items }: DashboardBreadcrumbProps) {
                   </AnimatePresence>
                 ) : (
                   // Static items don't animate - just use regular div
-                  <BreadcrumbLink 
-                    href={item.href} 
-                    className="transition-colors hover:text-foreground"
-                  >
-                    {item.label}
+                  <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
+                    <Link href={item.href!}>{item.label}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

@@ -9,7 +9,9 @@ import {
   Moon,
   Sparkles,
   Sun,
+  User as UserIcon,
 } from "lucide-react"
+import Link from "next/link"
 
 import {
   Avatar,
@@ -96,6 +98,12 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/home/profile">
+                  <UserIcon />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <BadgeCheck />
                 Account

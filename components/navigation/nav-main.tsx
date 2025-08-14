@@ -3,6 +3,7 @@
 import * as React from "react"
 import { ChevronRight } from "lucide-react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { useNavigationStore } from "@/lib/stores/navigation-store"
 import {
   Collapsible,
@@ -70,12 +71,21 @@ export function NavMain({
                           asChild
                           isActive={pathname === subItem.url}
                         >
-                          <a href={subItem.url}>
+                          <Link href={subItem.url} prefetch={true}>
                             <span>{subItem.title}</span>
-                          </a>
+                          </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     ))}
+                    {item.title === 'Settings' && (
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild isActive={pathname === '/home/profile'}>
+                          <Link href="/home/profile" prefetch={true}>
+                            <span>Profile</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    )}
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </SidebarMenuItem>
