@@ -28,7 +28,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const userData = user || defaultUser
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" {...props} className="bg-background/0 shadow-[0_1px_15px_rgba(0,20,100,0.1)]">
       <SidebarHeader>
         <TeamSwitcher teams={NAVIGATION_CONFIG.teams} />
       </SidebarHeader>

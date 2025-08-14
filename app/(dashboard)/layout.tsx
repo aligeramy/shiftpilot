@@ -34,10 +34,11 @@ export default async function DashboardLayout({
 
   return (
     <GradientBackground>
-      <div className="h-[calc(100vh-2rem)] bg-transparent backdrop-blur-sm rounded-2xl shadow-2xl border border-border/20 ring-1 ring-foreground/3 relative flex overflow-hidden">
+      <div className="h-[calc(100vh-2rem)] bg-background/30 backdrop-blur-sm rounded-2xl shadow-2xl 
+      border border-border/20 ring-1 ring-foreground/3 relative flex overflow-hidden">
         <SidebarProvider>
-          <AppSidebar user={user} />
-          <SidebarInset className="flex flex-col flex-1 opacity-100">
+          <AppSidebar user={user} className="z-1 relative" />
+          <SidebarInset className="flex flex-col flex-1 opacity-100 z-10 relative">
             {children}
           </SidebarInset>
         </SidebarProvider>
