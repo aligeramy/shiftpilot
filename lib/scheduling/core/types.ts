@@ -294,6 +294,8 @@ export interface AuditRecord {
 export type GenerationPhase = 
   | 'INITIALIZATION'
   | 'DATA_LOADING'
+  | 'DATA_CLEANUP'
+  | 'DATA_PERSISTENCE'
   | 'VACATION_PROCESSING'
   | 'FTE_CALCULATION'
   | 'CONSTRAINT_PREPROCESSING'
@@ -302,6 +304,8 @@ export type GenerationPhase =
   | 'OPTIMIZATION'
   | 'VALIDATION'
   | 'PERSISTENCE'
+  | 'COMPLETION'
+  | 'ERROR'
 
 export interface PerformanceMetrics {
   totalTimeMs: number

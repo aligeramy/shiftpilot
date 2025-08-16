@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { auth } from '@/lib/auth/auth'
 import { z } from 'zod'
 
 const subspecialtySchema = z.object({

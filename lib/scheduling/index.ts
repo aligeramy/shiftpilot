@@ -41,20 +41,18 @@ export class ScheduleGenerationService {
 
   /**
    * Validate configuration before generation
-   * @param config Configuration to validate
    * @returns Validation result with recommendations
    */
-  async validateConfiguration(config: GenerationConfig): Promise<ValidationResult> {
-    return await this.generator.validateConfiguration(config)
+  async validateConfiguration(): Promise<ValidationResult> {
+    return await this.generator.validateConfiguration()
   }
 
   /**
    * Estimate performance for given configuration
-   * @param config Configuration to analyze
    * @returns Performance estimate with complexity analysis
    */
-  async estimatePerformance(config: GenerationConfig): Promise<PerformanceEstimate> {
-    return await this.generator.estimatePerformance(config)
+  async estimatePerformance(): Promise<PerformanceEstimate> {
+    return await this.generator.estimatePerformance()
   }
 }
 

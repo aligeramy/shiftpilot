@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AdminSwapManager } from "@/components/swaps/admin-swap-manager"
 import { SwapRequestsList } from "@/components/swaps/swap-requests-list"
 
-import { auth } from "@/lib/auth"
+import { auth } from "@/lib/auth/auth"
 import { redirect } from "next/navigation"
 
 export default async function SwapsPage() {

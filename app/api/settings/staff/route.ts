@@ -2,7 +2,7 @@
  * API endpoints for staff management
  */
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { auth } from '@/lib/auth/auth'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 

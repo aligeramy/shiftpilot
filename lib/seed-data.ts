@@ -40,7 +40,7 @@ export const REAL_RADIOLOGISTS = [
   { name: "Ramiro Larrazabal", email: "rlarrazabal@test.com", subspecialty: "NEURO", fte: 90 }, // Also INR certified
   { name: "Santosh Reddy", email: "sreddy@test.com", subspecialty: "MSK", fte: 100, canWorkMA1: true },
   { name: "Shauna Kennedy", email: "skennedy@test.com", subspecialty: "NEURO", fte: 60 },
-  { name: "Charlotte Gallienne", email: "cgallienne@test.com", subspecialty: "NEURO", fte: 60 },
+  { name: "Charlotte Gallienne", email: "cgallienne@test.com", subspecialty: "NEURO", fte: 60, isFellow: true },
   { name: "Saba Moghimi", email: "smoghimi@test.com", subspecialty: "NEURO", fte: 80 },
   { name: "Will Warnicka", email: "wwarnicka@test.com", subspecialty: "BODY", fte: 80 },
   { name: "Khunsa Faiz", email: "kfaiz@test.com", subspecialty: "NEURO", fte: 60 },

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth"
+import { auth } from "@/lib/auth/auth"
 import { prisma } from "@/lib/db"
 import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { ProfileForm } from "@/components/profile/profile-form"

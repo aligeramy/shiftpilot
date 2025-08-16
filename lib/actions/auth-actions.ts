@@ -1,6 +1,6 @@
 "use server"
 
-import { signOut, auth } from "@/lib/auth"
+import { signOut, auth } from "@/lib/auth/auth"
 import { prisma } from "@/lib/db"
 import { put, del } from "@vercel/blob"
 import { revalidatePath } from "next/cache"

@@ -147,8 +147,8 @@ export async function seedDatabase() {
             userId: user.id,
             subspecialtyId: subspecialty.id,
             ftePercent: rad.fte,
-            isFellow: (rad as any).isFellow || false,
-            isResident: false
+            isFellow: 'isFellow' in rad ? (rad as { isFellow: boolean }).isFellow : false,
+            isResident: 'isResident' in rad ? (rad as { isResident: boolean }).isResident : false
           }
         })
         

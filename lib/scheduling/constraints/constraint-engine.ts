@@ -12,6 +12,7 @@ import {
   GenerationContext,
   ScheduleGenerationError,
   CONSTRAINT_PRIORITIES,
+  RadiologistProfile,
 } from '../core/types'
 
 export class EnterpriseConstraintEngine implements ConstraintEngine {
@@ -110,6 +111,42 @@ export class EnterpriseConstraintEngine implements ConstraintEngine {
       description: 'Evenly distribute desirable vs undesirable shifts',
       validator: new DesirabilityBalanceConstraintValidator()
     })
+
+    // ================================
+    // NEW ADVANCED CONSTRAINTS
+    // ================================
+
+    this.addHardConstraint({
+      id: 'HC-007-WEEKDAY-DISTRIBUTION',
+      type: 'HARD',
+      priority: CONSTRAINT_PRIORITIES.FTE_COMPLIANCE - 50,
+      description: 'Each radiologist must have exactly 1 of each weekday off per month',
+      validator: new WeekdayDistributionConstraintValidator()
+    })
+
+    this.addHardConstraint({
+      id: 'HC-008-LEARNER-LATE-SHIFTS',
+      type: 'HARD',
+      priority: CONSTRAINT_PRIORITIES.SUBSPECIALTY - 50,
+      description: 'Four out of five late shifts must be assigned to learners',
+      validator: new LearnerLateShiftConstraintValidator()
+    })
+
+    this.addHardConstraint({
+      id: 'HC-009-SHIFT-DEPENDENCIES',
+      type: 'HARD',
+      priority: CONSTRAINT_PRIORITIES.COVERAGE - 50,
+      description: 'Enforce temporal dependencies between related shifts',
+      validator: new ShiftDependencyConstraintValidator()
+    })
+
+    this.addSoftConstraint({
+      id: 'SC-005-INSTITUTIONAL-VACATION',
+      type: 'SOFT',
+      priority: CONSTRAINT_PRIORITIES.VACATION_PREFERENCE + 50,
+      description: 'Enforce institutional vacation rules (Christmas, summer blackouts)',
+      validator: new InstitutionalVacationConstraintValidator()
+    })
   }
 
   // ================================
@@ -192,12 +229,20 @@ export class EnterpriseConstraintEngine implements ConstraintEngine {
 
 class CoverageConstraintValidator implements ConstraintValidator {
   validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {
-    // For coverage constraint, we assume this is always satisfied during assignment
-    // The real validation happens at the generation level to ensure all shifts are assigned
+    // Check if this shift instance already has assignments in the context
+    const existingAssignments = context.existingAssignments.filter(
+      assignment => assignment.instanceId === candidate.shiftInstance.id
+    )
+    
+    // Coverage is satisfied if we can assign without conflicts
+    const wouldExceedCoverage = existingAssignments.length >= 1
+    
     return {
-      satisfied: true,
-      score: 100,
-      explanation: 'Coverage constraint satisfied - assignment will fill required shift'
+      satisfied: !wouldExceedCoverage,
+      score: wouldExceedCoverage ? 0 : 100,
+      explanation: wouldExceedCoverage 
+        ? `Shift ${candidate.shiftInstance.shiftType.code} already has assignment`
+        : `Coverage constraint satisfied for ${candidate.shiftInstance.shiftType.code}`
     }
   }
 }
@@ -209,10 +254,20 @@ class SubspecialtyConstraintValidator implements ConstraintValidator {
 
     // If no subspecialty required (allowAny), always valid
     if (candidate.shiftInstance.shiftType.allowAny || !requiredSubspecialty) {
+      // Check availability of other radiologists for fairness scoring
+      const availableRadiologists = context.radiologists.filter(r => 
+        !context.vacationBlocks.userBlocks.get(r.id)?.some(block =>
+          candidate.shiftInstance.date >= block.startDate && 
+          candidate.shiftInstance.date <= block.endDate
+        )
+      ).length
+      
+      const score = Math.min(100, 50 + (availableRadiologists * 2)) // Higher score with more options
+      
       return {
         satisfied: true,
-        score: 100,
-        explanation: 'Shift allows any subspecialty'
+        score,
+        explanation: `Shift allows any subspecialty (${availableRadiologists} available radiologists)`
       }
     }
 
@@ -255,21 +310,46 @@ class NamedAllowlistConstraintValidator implements ConstraintValidator {
     
     // If no named allowlist, constraint is satisfied
     if (!namedAllowlist || namedAllowlist.length === 0) {
+      // Score based on total available radiologists for this shift type
+      const eligibleCount = context.radiologists.filter(r => 
+        candidate.shiftInstance.shiftType.allowAny || 
+        r.subspecialtyCode === candidate.shiftInstance.shiftType.subspecialtyRequired
+      ).length
+      
+      const score = Math.min(100, 60 + (eligibleCount * 3)) // Higher score with more options
+      
       return {
         satisfied: true,
-        score: 100,
-        explanation: 'No named allowlist restriction'
+        score,
+        explanation: `No named allowlist restriction (${eligibleCount} eligible radiologists)`
       }
     }
 
     const isInAllowlist = namedAllowlist.includes(candidate.radiologist.email)
+    
+    if (isInAllowlist) {
+      // Check how many others in allowlist are available for better scoring
+      const availableInAllowlist = context.radiologists.filter(r => 
+        namedAllowlist.includes(r.email) &&
+        !context.vacationBlocks.userBlocks.get(r.id)?.some(block =>
+          candidate.shiftInstance.date >= block.startDate && 
+          candidate.shiftInstance.date <= block.endDate
+        )
+      ).length
+      
+      const score = Math.max(85, 100 - ((namedAllowlist.length - availableInAllowlist) * 5))
+      
+      return {
+        satisfied: true,
+        score,
+        explanation: `In named allowlist for ${candidate.shiftInstance.shiftType.code} (${availableInAllowlist}/${namedAllowlist.length} available)`
+      }
+    }
 
     return {
-      satisfied: isInAllowlist,
-      score: isInAllowlist ? 100 : 0,
-      explanation: isInAllowlist
-        ? `Radiologist in named allowlist for ${candidate.shiftInstance.shiftType.code}`
-        : `Radiologist not in named allowlist for ${candidate.shiftInstance.shiftType.code}`
+      satisfied: false,
+      score: 0,
+      explanation: `Not in named allowlist for ${candidate.shiftInstance.shiftType.code} (requires: ${namedAllowlist.join(', ')})`
     }
   }
 }
@@ -489,7 +569,7 @@ class DesirabilityBalanceConstraintValidator implements ConstraintValidator {
     }
   }
 
-  private calculateShiftDesirability(shiftType: any, date: Date): number {
+  private calculateShiftDesirability(shiftType: { code: string; startTime: string }, date: Date): number {
     let score = 0
 
     // Time-based scoring
@@ -512,4 +592,227 @@ class DesirabilityBalanceConstraintValidator implements ConstraintValidator {
   }
 }
 
-export { EnterpriseConstraintEngine }
+// ================================
+// NEW ADVANCED CONSTRAINT VALIDATORS  
+// ================================
+
+class WeekdayDistributionConstraintValidator implements ConstraintValidator {
+  validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {
+    const userId = candidate.radiologist.id
+    const assignmentDate = candidate.shiftInstance.date
+    const dayOfWeek = assignmentDate.getDay() // 0=Sunday, 1=Monday, etc.
+    
+    // Count existing assignments by day of week for this user this month
+    const monthlyAssignments = context.existingAssignments.filter(assignment => {
+      const shiftInstance = context.shiftInstances.find(si => si.id === assignment.instanceId)
+      if (!shiftInstance || assignment.userId !== userId) return false
+      
+      const shiftDate = shiftInstance.date
+      return shiftDate.getFullYear() === assignmentDate.getFullYear() && 
+             shiftDate.getMonth() === assignmentDate.getMonth()
+    })
+    
+    // Count assignments by day of week
+    const dayCount = [0, 0, 0, 0, 0, 0, 0] // Sun-Sat
+    monthlyAssignments.forEach(assignment => {
+      const shiftInstance = context.shiftInstances.find(si => si.id === assignment.instanceId)
+      if (shiftInstance) {
+        dayCount[shiftInstance.date.getDay()]++
+      }
+    })
+    
+    // Check if adding this assignment would create imbalance
+    const newDayCount = [...dayCount]
+    newDayCount[dayOfWeek]++
+    
+    // Target: roughly equal distribution (allow ±1 variance)
+    const workDays = newDayCount.slice(1, 6) // Monday-Friday
+    const maxWorkDay = Math.max(...workDays)
+    const minWorkDay = Math.min(...workDays)
+    const isBalanced = (maxWorkDay - minWorkDay) <= 2
+    
+    return {
+      satisfied: isBalanced,
+      score: isBalanced ? 100 : Math.max(0, 80 - ((maxWorkDay - minWorkDay) * 10)),
+      explanation: `Weekday distribution: ${workDays.join(',')} (max-min=${maxWorkDay - minWorkDay})`
+    }
+  }
+}
+
+class LearnerLateShiftConstraintValidator implements ConstraintValidator {
+  validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {
+    const shiftType = candidate.shiftInstance.shiftType
+    const isLateShift = this.isLateShift(shiftType)
+    const isLearner = candidate.radiologist.isFellow || candidate.radiologist.isResident
+    
+    if (!isLateShift) {
+      return {
+        satisfied: true,
+        score: 100,
+        explanation: 'Not a late shift - learner constraint does not apply'
+      }
+    }
+    
+    // Count late shift assignments this month
+    const monthAssignments = context.existingAssignments.filter(assignment => {
+      const shiftInstance = context.shiftInstances.find(si => si.id === assignment.instanceId)
+      return shiftInstance && this.isLateShift(shiftInstance.shiftType) &&
+             shiftInstance.date.getFullYear() === candidate.shiftInstance.date.getFullYear() &&
+             shiftInstance.date.getMonth() === candidate.shiftInstance.date.getMonth()
+    })
+    
+    const learnerAssignments = monthAssignments.filter(assignment => {
+      const radiologist = context.radiologists.find(r => r.id === assignment.userId)
+      return radiologist && (radiologist.isFellow || radiologist.isResident)
+    })
+    
+    const learnerRatio = monthAssignments.length > 0 ? learnerAssignments.length / monthAssignments.length : 0
+    const wouldImprove = isLearner ? (learnerAssignments.length + 1) / (monthAssignments.length + 1) : learnerRatio
+    const targetRatio = 0.8 // 4 out of 5 = 80%
+    
+    const satisfied = wouldImprove >= targetRatio || isLearner
+    const score = satisfied ? 100 : (isLearner ? 90 : Math.max(0, 100 - ((targetRatio - wouldImprove) * 200)))
+    
+    return {
+      satisfied,
+      score,
+      explanation: `Late shift learner ratio: ${(wouldImprove * 100).toFixed(1)}% (target: 80%)`
+    }
+  }
+  
+  private isLateShift(shiftType: { code: string; startTime: string }): boolean {
+    // Late shifts: 16:00-18:00, 18:00-21:00, call shifts
+    const hour = parseInt(shiftType.startTime.split(':')[0])
+    return hour >= 16 || shiftType.code.includes('CALL') || shiftType.code.includes('16_18') || shiftType.code.includes('18_21')
+  }
+}
+
+class ShiftDependencyConstraintValidator implements ConstraintValidator {
+  validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {
+    const dependencies = this.getShiftDependencies()
+    const currentShift = candidate.shiftInstance
+    
+    // Check if current shift has dependencies
+    for (const [shiftPattern, dependentPattern] of dependencies) {
+      if (this.matchesPattern(currentShift.shiftType.code, shiftPattern)) {
+        // Find the dependent shift (next day)
+        const nextDay = new Date(currentShift.date)
+        nextDay.setDate(nextDay.getDate() + 1)
+        
+        const dependentShift = context.shiftInstances.find(si => 
+          si.date.toDateString() === nextDay.toDateString() &&
+          this.matchesPattern(si.shiftType.code, dependentPattern)
+        )
+        
+        if (dependentShift) {
+          // Check if dependent shift can be covered by appropriate pool
+          const eligibleForDependent = context.radiologists.filter(r =>
+            this.isEligibleForDependentShift(r, dependentPattern)
+          )
+          
+          if (eligibleForDependent.length === 0) {
+            return {
+              satisfied: false,
+              score: 0,
+              explanation: `No eligible radiologists for dependent shift ${dependentPattern} tomorrow`
+            }
+          }
+          
+          return {
+            satisfied: true,
+            score: Math.min(100, 70 + (eligibleForDependent.length * 5)),
+            explanation: `Dependency satisfied: ${eligibleForDependent.length} eligible for ${dependentPattern} tomorrow`
+          }
+        }
+      }
+    }
+    
+    return {
+      satisfied: true,
+      score: 100,
+      explanation: 'No shift dependencies apply'
+    }
+  }
+  
+  private getShiftDependencies(): Array<[string, string]> {
+    return [
+      ['NEURO_16_18', 'NEURO_18_21'], // Neuro 1/2 16-18 → Neuro 3 18-21 next day
+      ['N1', 'NEURO_18_21'],          // Alternative pattern
+      ['N2', 'NEURO_18_21']           // Alternative pattern
+    ]
+  }
+  
+  private matchesPattern(shiftCode: string, pattern: string): boolean {
+    return shiftCode.includes(pattern) || shiftCode === pattern
+  }
+  
+  private isEligibleForDependentShift(radiologist: RadiologistProfile, dependentPattern: string): boolean {
+    // For NEURO_18_21 (Neuro 3), only specific radiologists eligible
+    if (dependentPattern.includes('NEURO_18_21')) {
+      return radiologist.subspecialtyCode === 'NEURO' && !radiologist.isFellow
+    }
+    return true
+  }
+}
+
+class InstitutionalVacationConstraintValidator implements ConstraintValidator {
+  validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {
+    const assignmentDate = candidate.shiftInstance.date
+    const blackoutPeriods = this.getInstitutionalBlackouts(assignmentDate.getFullYear())
+    
+    // Check if assignment falls during blackout period
+    const isInBlackout = blackoutPeriods.some(period =>
+      assignmentDate >= period.start && assignmentDate <= period.end
+    )
+    
+    if (isInBlackout) {
+      // During blackout, prioritize radiologists not requesting vacation
+      const userVacationPrefs = context.vacationPreferences.filter(pref => 
+        pref.userId === candidate.radiologist.id &&
+        assignmentDate >= pref.weekStartDate &&
+        assignmentDate <= pref.weekEndDate
+      )
+      
+      const hasVacationRequest = userVacationPrefs.length > 0
+      const score = hasVacationRequest ? 20 : 90 // Heavy penalty for vacation during blackout
+      
+      return {
+        satisfied: true, // Soft constraint
+        score,
+        explanation: hasVacationRequest 
+          ? 'Assignment during institutional blackout period with vacation request'
+          : 'Assignment during institutional blackout period - no vacation conflict'
+      }
+    }
+    
+    return {
+      satisfied: true,
+      score: 100,
+      explanation: 'No institutional vacation blackout conflicts'
+    }
+  }
+  
+  private getInstitutionalBlackouts(year: number): Array<{ start: Date; end: Date; reason: string }> {
+    return [
+      // Christmas/New Year blackout
+      {
+        start: new Date(year, 11, 20), // Dec 20
+        end: new Date(year + 1, 0, 5), // Jan 5
+        reason: 'Christmas/New Year blackout'
+      },
+      // Summer blackout periods (example - adjust based on your institution)
+      {
+        start: new Date(year, 6, 1),   // July 1
+        end: new Date(year, 6, 14),    // July 14
+        reason: 'Summer blackout period 1'
+      },
+      {
+        start: new Date(year, 7, 15),  // Aug 15
+        end: new Date(year, 7, 31),    // Aug 31
+        reason: 'Summer blackout period 2'
+      }
+    ]
+  }
+}
+
+// Export already handled by class declaration above

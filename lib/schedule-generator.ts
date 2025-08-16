@@ -5,7 +5,7 @@
  * @deprecated Use @/lib/scheduling directly for new code
  */
 
-import { generateOptimizedSchedule, type LegacyGenerationConfig, type LegacyGenerationResult } from './scheduling'
+import { generateOptimizedSchedule, type LegacyGenerationConfig } from './scheduling'
 
 // ================================
 // LEGACY TYPES (Backward Compatibility)

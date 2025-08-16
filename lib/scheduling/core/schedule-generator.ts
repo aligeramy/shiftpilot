@@ -11,6 +11,8 @@ import {
   GenerationContext,
   AssignmentRecord,
   ValidationResult,
+  ConstraintViolation,
+  ValidationWarning,
   PerformanceEstimate,
   RadiologistProfile,
   ShiftInstance,
@@ -26,7 +28,6 @@ import {
   AuditRecord,
   GenerationPhase,
   ScheduleGenerationError,
-  GENERATION_CONSTANTS,
   FairnessScore,
   WorkloadData,
   WorkloadStatistics,
@@ -38,7 +39,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
   private constraintEngine: EnterpriseConstraintEngine
   private auditTrail: AuditRecord[] = []
   private performanceMetrics: PerformanceMetrics
-  private randomSeed: number
+  private randomSeed: number = 42
 
   constructor() {
     this.constraintEngine = new EnterpriseConstraintEngine()
@@ -60,21 +61,36 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
       // Phase 1: Load and validate data
       const context = await this.loadGenerationContext(config)
       
-      // Phase 2: Generate assignments using optimized algorithm
+      // Phase 2: Clear existing schedule data for the month
+      await this.clearExistingSchedule(config)
+      
+      // Phase 3: Create schedule instances in database
+      await this.persistScheduleInstances(context.shiftInstances)
+      
+      // Phase 4: Generate assignments using optimized algorithm
       const assignments = await this.generateAssignmentsOptimized(context)
       
-      // Phase 3: Validate and optimize results
-      const validation = await this.validateAndOptimize(assignments, context)
+      // Phase 5: Persist assignments to database
+      const persistedAssignments = await this.persistAssignments(assignments)
       
-      // Phase 4: Calculate metrics and finalize
-      const metrics = this.calculateGenerationMetrics(assignments, context)
-      const recommendations = this.generateRecommendations(metrics, validation)
+      // Phase 6: Validate and optimize results
+      const validation = await this.validateAndOptimize(persistedAssignments, context)
+      
+      // Phase 7: Calculate metrics and finalize
+      const metrics = this.calculateGenerationMetrics(persistedAssignments, context)
+      const recommendations = this.generateRecommendations(metrics)
 
       this.performanceMetrics.totalTimeMs = Date.now() - startTime
 
+      this.logAudit('COMPLETION', 'Schedule generation completed', {
+        totalShifts: context.shiftInstances.length,
+        assignedShifts: persistedAssignments.length,
+        coveragePercentage: (persistedAssignments.length / context.shiftInstances.length) * 100
+      })
+
       return {
         success: validation.isValid,
-        assignments,
+        assignments: persistedAssignments,
         metrics,
         validation,
         auditTrail: this.auditTrail,
@@ -83,7 +99,8 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
       }
 
     } catch (error) {
-      this.logAudit('ERROR', 'Generation failed', { error: error.message })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      this.logAudit('ERROR', 'Generation failed', { error: errorMessage })
       
       return {
         success: false,
@@ -92,12 +109,12 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
         validation: { isValid: false, hardConstraintViolations: [], softConstraintIssues: [], warnings: [], recommendations: [] },
         auditTrail: this.auditTrail,
         performance: { ...this.performanceMetrics, totalTimeMs: Date.now() - startTime },
-        recommendations: [`Generation failed: ${error.message}`]
+        recommendations: [`Generation failed: ${errorMessage}`]
       }
     }
   }
 
-  async validateConfiguration(config: GenerationConfig): Promise<ValidationResult> {
+  async validateConfiguration(): Promise<ValidationResult> {
     // Implementation for configuration validation
     // This would check data integrity, roster adequacy, etc.
     return {
@@ -109,7 +126,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
     }
   }
 
-  async estimatePerformance(config: GenerationConfig): Promise<PerformanceEstimate> {
+  async estimatePerformance(): Promise<PerformanceEstimate> {
     // Implementation for performance estimation
     // This would analyze complexity and provide estimates
     return {
@@ -188,7 +205,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
       userDateAssignments.get(selectedCandidate.radiologist.id)?.add(dateStr)
       
       // Update context for fairness tracking
-      this.updateContextAfterAssignment(context, assignment, shiftInstance)
+      this.updateContextAfterAssignment(context, assignment)
 
       this.logAudit('ASSIGNMENT_GENERATION', 'Assignment created', {
         radiologist: selectedCandidate.radiologist.name,
@@ -290,10 +307,11 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
 
       } catch (error) {
         // Hard constraint violation - skip this candidate
+        const errorMessage = error instanceof Error ? error.message : 'Constraint violation'
         this.logAudit('ASSIGNMENT_GENERATION', 'Candidate filtered by hard constraint', {
           radiologist: radiologist.name,
           shiftType: shiftInstance.shiftType.code,
-          reason: error.message
+          reason: errorMessage
         })
       }
     }
@@ -386,7 +404,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
     return shiftType.namedAllowlist.includes(radiologist.email)
   }
 
-  private isFTECompliant(radiologist: RadiologistProfile, shiftInstance: ShiftInstance, context: GenerationContext): boolean {
+  private isFTECompliant(radiologist: RadiologistProfile, _shiftInstance: ShiftInstance, context: GenerationContext): boolean {
     if (radiologist.ftePercent >= 100) return true
 
     // Count existing assignments for the month
@@ -424,7 +442,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
     return weights.default
   }
 
-  private updateContextAfterAssignment(context: GenerationContext, assignment: AssignmentRecord, shiftInstance: ShiftInstance): void {
+  private updateContextAfterAssignment(context: GenerationContext, assignment: AssignmentRecord): void {
     // Add to existing assignments
     context.existingAssignments.push(assignment)
 
@@ -623,8 +641,11 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
             endTime.setHours(parseInt(endHour), parseInt(endMin))
           }
 
+          // Create deterministic instance ID for consistency
+          const instanceId = `instance_${shiftType.id}_${date.toISOString().split('T')[0]}`
+          
           instances.push({
-            id: `instance_${shiftType.id}_${date.toISOString().split('T')[0]}`,
+            id: instanceId,
             organizationId: config.organizationId,
             shiftTypeId: shiftType.id,
             date,
@@ -757,10 +778,10 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
   // ================================
 
   private async validateAndOptimize(assignments: AssignmentRecord[], context: GenerationContext): Promise<ValidationResult> {
-    const hardConstraintViolations = []
-    const softConstraintIssues = []
-    const warnings = []
-    const recommendations = []
+    const hardConstraintViolations: ConstraintViolation[] = []
+    const softConstraintIssues: ConstraintViolation[] = []
+    const warnings: ValidationWarning[] = []
+    const recommendations: string[] = []
 
     // Check coverage
     const coveragePercentage = (assignments.length / context.shiftInstances.length) * 100
@@ -861,7 +882,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
     }
   }
 
-  private generateRecommendations(metrics: GenerationMetrics, validation: ValidationResult): string[] {
+  private generateRecommendations(metrics: GenerationMetrics): string[] {
     const recommendations: string[] = []
 
     if (metrics.coveragePercentage < 100) {
@@ -877,6 +898,133 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
     }
 
     return recommendations
+  }
+
+  // ================================
+  // DATABASE PERSISTENCE METHODS
+  // ================================
+
+  private async clearExistingSchedule(config: GenerationConfig): Promise<void> {
+    this.logAudit('DATA_CLEANUP', 'Clearing existing schedule data for month')
+    
+    const firstDay = new Date(config.targetYear, config.targetMonth - 1, 1)
+    const lastDay = new Date(config.targetYear, config.targetMonth, 0)
+
+    // Delete existing assignments and instances for the month
+    await prisma.$transaction(async (tx) => {
+      // First delete assignments (due to foreign key constraints)
+      await tx.scheduleAssignment.deleteMany({
+        where: {
+          instance: {
+            organizationId: config.organizationId,
+            date: {
+              gte: firstDay,
+              lte: lastDay
+            }
+          }
+        }
+      })
+
+      // Then delete schedule instances
+      await tx.scheduleInstance.deleteMany({
+        where: {
+          organizationId: config.organizationId,
+          date: {
+            gte: firstDay,
+            lte: lastDay
+          }
+        }
+      })
+    })
+
+    this.logAudit('DATA_CLEANUP', 'Existing schedule data cleared')
+  }
+
+  private async persistScheduleInstances(shiftInstances: ShiftInstance[]): Promise<void> {
+    this.logAudit('DATA_PERSISTENCE', 'Persisting schedule instances to database', {
+      instanceCount: shiftInstances.length
+    })
+
+    // Create schedule instances in batches to avoid memory issues
+    const batchSize = 50
+    for (let i = 0; i < shiftInstances.length; i += batchSize) {
+      const batch = shiftInstances.slice(i, i + batchSize)
+      
+      await prisma.scheduleInstance.createMany({
+        data: batch.map(instance => ({
+          id: instance.id,
+          organizationId: instance.organizationId,
+          shiftTypeId: instance.shiftTypeId,
+          date: instance.date,
+          startTime: instance.startTime,
+          endTime: instance.endTime,
+          status: 'DRAFT'
+        })),
+        skipDuplicates: true
+      })
+    }
+
+    this.logAudit('DATA_PERSISTENCE', 'Schedule instances persisted successfully')
+  }
+
+  private async persistAssignments(assignments: AssignmentRecord[]): Promise<AssignmentRecord[]> {
+    this.logAudit('DATA_PERSISTENCE', 'Persisting assignments to database', {
+      assignmentCount: assignments.length
+    })
+
+    if (assignments.length === 0) {
+      this.logAudit('DATA_PERSISTENCE', 'No assignments to persist')
+      return []
+    }
+
+    const persistedAssignments: AssignmentRecord[] = []
+
+    // Create assignments one by one to handle conflicts and get proper IDs
+    for (const assignment of assignments) {
+      try {
+        const created = await prisma.scheduleAssignment.create({
+          data: {
+            instanceId: assignment.instanceId,
+            userId: assignment.userId,
+            assignmentType: assignment.assignmentType as 'GENERATED' | 'MANUAL' | 'SWAPPED'
+          }
+        })
+
+        // Update assignment record with database ID
+        const persistedAssignment: AssignmentRecord = {
+          ...assignment,
+          id: created.id,
+          createdAt: created.createdAt
+        }
+
+        persistedAssignments.push(persistedAssignment)
+
+        this.logAudit('DATA_PERSISTENCE', 'Assignment created', {
+          assignmentId: created.id,
+          instanceId: assignment.instanceId,
+          userId: assignment.userId
+        })
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        this.logAudit('DATA_PERSISTENCE', 'Failed to create assignment', {
+          instanceId: assignment.instanceId,
+          userId: assignment.userId,
+          error: errorMessage
+        })
+        
+        // Continue with other assignments even if one fails
+        console.warn(`Failed to persist assignment: ${errorMessage}`)
+      }
+    }
+
+    this.logAudit('DATA_PERSISTENCE', 'Assignment persistence completed', {
+      requested: assignments.length,
+      persisted: persistedAssignments.length,
+      success: persistedAssignments.length === assignments.length
+    })
+
+    return persistedAssignments
   }
 
   // ================================
@@ -896,7 +1044,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
       : sorted[mid]
   }
 
-  private logAudit(phase: GenerationPhase, action: string, details?: Record<string, any>): void {
+  private logAudit(phase: GenerationPhase, action: string, details?: Record<string, unknown>): void {
     this.auditTrail.push({
       timestamp: new Date(),
       phase,
@@ -948,4 +1096,4 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
   }
 }
 
-export { EnterpriseScheduleGenerator }
+// Export moved to index.ts to avoid duplicate declaration

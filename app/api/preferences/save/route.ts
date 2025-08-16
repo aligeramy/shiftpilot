@@ -2,7 +2,7 @@
  * API route to manually save vacation preferences for a specific radiologist
  */
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { auth } from '@/lib/auth/auth'
 import { prisma } from '@/lib/db'
 
 interface PreferenceData {
