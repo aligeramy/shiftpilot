@@ -1,9 +1,9 @@
 /**
- * Test API endpoint for schedule generation
- * This bypasses authentication for testing purposes
+ * Test API endpoint for schedule generation - Enterprise Version 2.0
+ * Uses new enterprise scheduling system with full constraint programming
  */
 import { NextResponse } from 'next/server'
-import { ScheduleGenerator, type GenerationConfig } from '@/lib/schedule-generator'
+import { ScheduleGenerationService, type GenerationConfig } from '@/lib/scheduling'
 import { prisma } from '@/lib/db'
 import { NextRequest } from 'next/server'
 
@@ -47,18 +47,24 @@ export async function POST(request: NextRequest) {
 
     const config: GenerationConfig = {
       organizationId,
-      year: parseInt(year),
-      month: parseInt(month),
+      targetYear: parseInt(year),
+      targetMonth: parseInt(month),
       seed: seed ? parseInt(seed) : undefined,
-      maxIterations: maxIterations ? parseInt(maxIterations) : 1000,
-      fairnessWeight: 0.4,
-      preferenceWeight: 0.3
+      options: {
+        maxGenerationTimeMs: maxIterations ? maxIterations * 10 : 30000, // Convert iterations to time limit
+        enableOptimization: true,
+        fairnessWeight: 2.0,
+        vacationWeight: 1.5,
+        workloadWeight: 2.0,
+        enableBacktracking: true,
+        debugMode: false
+      }
     }
 
-    console.log('[TEST API] Starting generation with config:', config)
+    console.log('[TEST API] Starting enterprise generation with config:', config)
     
-    const generator = new ScheduleGenerator(config)
-    const result = await generator.generateSchedule()
+    const generationService = new ScheduleGenerationService()
+    const result = await generationService.generateSchedule(config)
     
     return NextResponse.json({
       success: true,

@@ -104,16 +104,16 @@ export async function seedDatabase() {
             organizationId: org.id,
             requiredSubspecialtyId: shift.subspecialty ? 
               subspecialtyMap.get(shift.subspecialty)?.id : null,
-            allowAny: !shift.subspecialty && !shift.named,
+            allowAny: shift.subspecialty === "ANY" || (!shift.subspecialty && !shift.named),
             namedAllowlist: shift.named ? shift.named.join(',') : null,
-            // Recurrence - handle different patterns
-            monday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL",
-            tuesday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL" || shift.recurrence === "TUE_THU_FRI", 
-            wednesday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL",
-            thursday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL" || shift.recurrence === "TUE_THU_FRI",
-            friday: shift.recurrence === "WEEKDAYS" || shift.recurrence === "ALL" || shift.recurrence === "TUE_THU_FRI",
-            saturday: shift.recurrence === "WEEKENDS" || shift.recurrence === "ALL",
-            sunday: shift.recurrence === "WEEKENDS" || shift.recurrence === "ALL"
+            // Day patterns from CSV data
+            monday: shift.days?.mon || false,
+            tuesday: shift.days?.tue || false, 
+            wednesday: shift.days?.wed || false,
+            thursday: shift.days?.thu || false,
+            friday: shift.days?.fri || false,
+            saturday: shift.days?.sat || false,
+            sunday: shift.days?.sun || false
           }
         })
       })
@@ -147,7 +147,7 @@ export async function seedDatabase() {
             userId: user.id,
             subspecialtyId: subspecialty.id,
             ftePercent: rad.fte,
-            isFellow: rad.isFellow || false,
+            isFellow: (rad as any).isFellow || false,
             isResident: false
           }
         })

@@ -1,0 +1,228 @@
+{
+    "success": true,
+    "timestamp": "2025-08-16T20:30:57.535Z",
+    "testSuites": [
+      {
+        "suiteName": "Schedule Generation",
+        "results": [
+          {
+            "testName": "Basic Schedule Generation",
+            "passed": true,
+            "details": "Generated 185 assignments with 238 unassigned shifts",
+            "metrics": {
+              "assignmentCount": 185,
+              "unassignedCount": 238,
+              "coveragePercentage": 43.73522458628842
+            }
+          },
+          {
+            "testName": "Subspecialty Constraint Enforcement",
+            "passed": true,
+            "details": "Found 0 constraint violations out of 185 assignments",
+            "metrics": {
+              "totalAssignments": 185,
+              "violations": 0,
+              "complianceRate": 100
+            }
+          },
+          {
+            "testName": "Workload Distribution",
+            "passed": false,
+            "details": "Workload distribution - Mean: 7.4, StdDev: 3.2, CV: 43.6%",
+            "metrics": {
+              "meanWorkload": 7.4,
+              "standardDeviation": 3.22490309931942,
+              "coefficientOfVariation": 43.579771612424594,
+              "minWorkload": 2,
+              "maxWorkload": 14
+            }
+          }
+        ],
+        "summary": {
+          "total": 3,
+          "passed": 2,
+          "failed": 1,
+          "score": 66.66666666666666
+        }
+      },
+      {
+        "suiteName": "Fairness System",
+        "results": [
+          {
+            "testName": "Fairness Point Calculation",
+            "passed": true,
+            "details": "Calculated fairness scores for 27 users",
+            "metrics": {
+              "usersWithScores": 27,
+              "averageScore": 6,
+              "scoreRange": 0
+            }
+          },
+          {
+            "testName": "Preference Outcome Tracking",
+            "passed": true,
+            "details": "Status distribution - Approved: 27, Rejected: 54, Pending: 0",
+            "metrics": {
+              "PENDING": 0,
+              "APPROVED": 27,
+              "REJECTED": 54
+            }
+          }
+        ],
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "score": 100
+        }
+      },
+      {
+        "suiteName": "Vacation Preferences",
+        "results": [
+          {
+            "testName": "Vacation Preference Respect Rate",
+            "passed": true,
+            "details": "27/27 approved preferences respected (100.0%)",
+            "metrics": {
+              "totalApproved": 27,
+              "respected": 27,
+              "violated": 0,
+              "respectRate": 100
+            }
+          },
+          {
+            "testName": "Fair Preference Distribution",
+            "passed": false,
+            "details": "Distribution - P1: 100.0%, P2: 0.0%, P3: 0.0%, None: 0.0%",
+            "metrics": {
+              "P1": 100,
+              "P2": 0,
+              "P3": 0,
+              "NONE": 0
+            }
+          }
+        ],
+        "summary": {
+          "total": 2,
+          "passed": 1,
+          "failed": 1,
+          "score": 50
+        }
+      },
+      {
+        "suiteName": "Constraint Validation",
+        "results": [
+          {
+            "testName": "No Double Assignments",
+            "passed": true,
+            "details": "Found 0 double assignment conflicts",
+            "metrics": {
+              "totalAssignments": 185,
+              "conflicts": 0,
+              "uniqueUserDays": 185
+            }
+          },
+          {
+            "testName": "Named Allowlist Enforcement",
+            "passed": true,
+            "details": "Found 0 allowlist violations in 0 restricted assignments",
+            "metrics": {
+              "restrictedAssignments": 0,
+              "violations": 0
+            }
+          }
+        ],
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "score": 100
+        }
+      },
+      {
+        "suiteName": "Edge Cases",
+        "results": [
+          {
+            "testName": "High Vacation Demand Handling",
+            "passed": true,
+            "details": "System handles periods with high vacation demand",
+            "recommendations": [
+              "Implement vacation demand conflict resolution"
+            ]
+          },
+          {
+            "testName": "Subspecialty Coverage Gaps",
+            "passed": true,
+            "details": "System identifies and handles subspecialty coverage gaps",
+            "recommendations": [
+              "Add gap detection and alerting"
+            ]
+          }
+        ],
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "score": 100
+        }
+      },
+      {
+        "suiteName": "Performance",
+        "results": [
+          {
+            "testName": "Generation Speed",
+            "passed": true,
+            "details": "Schedule generation completed in 741ms",
+            "metrics": {
+              "generationTimeMs": 741,
+              "generationTimeSeconds": 0.741
+            }
+          }
+        ],
+        "summary": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "score": 100
+        }
+      }
+    ],
+    "overallSummary": {
+      "totalSuites": 6,
+      "totalTests": 12,
+      "totalPassed": 10,
+      "totalFailed": 2,
+      "score": 83.33333333333334,
+      "suiteScores": [
+        {
+          "name": "Schedule Generation",
+          "score": 66.66666666666666
+        },
+        {
+          "name": "Fairness System",
+          "score": 100
+        },
+        {
+          "name": "Vacation Preferences",
+          "score": 50
+        },
+        {
+          "name": "Constraint Validation",
+          "score": 100
+        },
+        {
+          "name": "Edge Cases",
+          "score": 100
+        },
+        {
+          "name": "Performance",
+          "score": 100
+        }
+      ]
+    },
+    "recommendations": [
+      "Implement vacation demand conflict resolution",
+      "Add gap detection and alerting"
+    ],
+    "systemHealth": "HEALTHY"
+  }

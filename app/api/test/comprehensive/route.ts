@@ -1,10 +1,11 @@
 /**
- * Comprehensive Calendar System Test Suite
+ * Comprehensive Calendar System Test Suite - Enterprise Version 2.0
  * Tests all features: schedule generation, fairness, swaps, preferences, constraints
+ * Uses new enterprise scheduling system with constraint programming
  */
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { ScheduleGenerator } from '@/lib/schedule-generator'
+import { ScheduleGenerationService } from '@/lib/scheduling'
 
 interface TestResult {
   testName: string
@@ -85,25 +86,31 @@ async function testScheduleGeneration(): Promise<TestSuite> {
     try {
       const config = {
         organizationId: org.id,
-        year: 2025,
-        month: 8,
+        targetYear: 2025,
+        targetMonth: 8,
         seed: 42,
-        maxIterations: 1000,
-        fairnessWeight: 0.4,
-        preferenceWeight: 0.3
+        options: {
+          maxGenerationTimeMs: 30000,
+          enableOptimization: true,
+          fairnessWeight: 2.0,
+          vacationWeight: 1.5,
+          workloadWeight: 2.0,
+          enableBacktracking: true,
+          debugMode: false
+        }
       }
       
-      const generator = new ScheduleGenerator(config)
-      const result = await generator.generateSchedule()
+      const generationService = new ScheduleGenerationService()
+      const result = await generationService.generateSchedule(config)
       
       results.push({
         testName: 'Basic Schedule Generation',
         passed: result.success && result.assignments.length > 0,
-        details: `Generated ${result.assignments.length} assignments with ${result.metrics.unassignedInstances} unassigned shifts`,
+        details: `Generated ${result.assignments.length} assignments with ${result.metrics.unassignedShifts} unassigned shifts`,
         metrics: {
           assignmentCount: result.assignments.length,
-          unassignedCount: result.metrics.unassignedInstances,
-          coveragePercentage: (result.assignments.length / (result.assignments.length + result.metrics.unassignedInstances)) * 100
+          unassignedCount: result.metrics.unassignedShifts,
+          coveragePercentage: result.metrics.coveragePercentage
         }
       })
     } catch (error) {
@@ -614,16 +621,22 @@ async function testPerformance(): Promise<TestSuite> {
     
     const config = {
       organizationId: org.id,
-      year: 2025,
-      month: 8,
+      targetYear: 2025,
+      targetMonth: 8,
       seed: 42,
-      maxIterations: 1000,
-      fairnessWeight: 0.4,
-      preferenceWeight: 0.3
+      options: {
+        maxGenerationTimeMs: 30000,
+        enableOptimization: true,
+        fairnessWeight: 2.0,
+        vacationWeight: 1.5,
+        workloadWeight: 2.0,
+        enableBacktracking: true,
+        debugMode: false
+      }
     }
     
-    const generator = new ScheduleGenerator(config)
-    await generator.generateSchedule()
+    const generationService = new ScheduleGenerationService()
+    await generationService.generateSchedule(config)
     
     const generationTime = Date.now() - startTime
     
