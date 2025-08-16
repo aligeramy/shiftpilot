@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import type { EditableItem } from '@/lib/types/api'
 import { 
   Plus, 
   Edit, 
@@ -68,7 +69,7 @@ interface SettingsData {
 interface EditState {
   type: 'subspecialty' | 'shiftType' | 'staff' | null
   mode: 'add' | 'edit' | null
-  item: any
+  item: EditableItem | null
 }
 
 const DAYS = [
@@ -85,7 +86,7 @@ export function EditableSettings() {
   const [data, setData] = useState<SettingsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [editState, setEditState] = useState<EditState>({ type: null, mode: null, item: null })
-  const [formData, setFormData] = useState<any>({})
+  const [formData, setFormData] = useState<Record<string, unknown>>({})
 
   const loadData = async () => {
     try {
@@ -104,8 +105,8 @@ export function EditableSettings() {
     loadData()
   }, [])
 
-  const handleEdit = (type: EditState['type'], mode: EditState['mode'], item?: any) => {
-    setEditState({ type, mode, item })
+  const handleEdit = (type: EditState['type'], mode: EditState['mode'], item?: EditableItem) => {
+    setEditState({ type, mode, item: item ?? null })
     
     if (mode === 'add') {
       switch (type) {
@@ -122,7 +123,7 @@ export function EditableSettings() {
             recurrence: {
               mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false
             },
-            eligibilityType: 'allowAny',
+            eligibilityType: 'any',
             requiredSubspecialtyId: '',
             namedAllowlist: ''
           })
@@ -139,17 +140,16 @@ export function EditableSettings() {
         case 'shiftType':
           setFormData({
             ...item,
-            eligibilityType: item.eligibility.allowAny ? 'allowAny' : 
-                            item.eligibility.requiredSubspecialty ? 'subspecialty' : 'named',
-            requiredSubspecialtyId: item.eligibility.requiredSubspecialty?.code || '',
-            namedAllowlist: item.eligibility.namedAllowlist.join(', ')
+            eligibilityType: 'any',
+            requiredSubspecialtyId: '',
+            namedAllowlist: ''
           })
           break
         case 'staff':
           setFormData({ 
             ...item, 
-            subspecialtyId: item.subspecialty || '',
-            ftePercent: item.ftePercent || 100
+            subspecialtyId: '',
+            ftePercent: 100
           })
           break
       }
@@ -160,21 +160,22 @@ export function EditableSettings() {
     if (!editState.type) return
 
     try {
-      const endpoint = `/api/settings/${editState.type}${editState.mode === 'edit' ? `/${editState.item.id}` : ''}`
+      const endpoint = `/api/settings/${editState.type}${editState.mode === 'edit' ? `/${editState.item?.id}` : ''}`
       const method = editState.mode === 'add' ? 'POST' : 'PUT'
       
       // Transform form data based on type
-      let payload = { ...formData }
+      let payload = { ...formData } as Record<string, unknown>
       
       if (editState.type === 'shiftType') {
         // Transform shift type data
+        const shiftFormData = payload as Record<string, unknown>
         payload = {
           ...payload,
-          namedAllowlist: payload.namedAllowlist ? payload.namedAllowlist.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+          namedAllowlist: typeof shiftFormData.namedAllowlist === 'string' ? shiftFormData.namedAllowlist.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
           eligibility: {
-            allowAny: payload.eligibilityType === 'allowAny',
-            requiredSubspecialtyId: payload.eligibilityType === 'subspecialty' ? payload.requiredSubspecialtyId : null,
-            namedAllowlist: payload.eligibilityType === 'named' ? payload.namedAllowlist.split(',').map((s: string) => s.trim()).filter(Boolean) : []
+            allowAny: shiftFormData.eligibilityType === 'any',
+            requiredSubspecialtyId: shiftFormData.eligibilityType === 'subspecialty' ? shiftFormData.requiredSubspecialtyId : null,
+            namedAllowlist: shiftFormData.eligibilityType === 'named' ? (typeof shiftFormData.namedAllowlist === 'string' ? shiftFormData.namedAllowlist.split(',').map((s: string) => s.trim()).filter(Boolean) : []) : []
           }
         }
         delete payload.eligibilityType
@@ -182,10 +183,11 @@ export function EditableSettings() {
       }
       
       if (editState.type === 'staff') {
+        const staffFormData = payload as Record<string, unknown>
         // Ensure FTE is a number and within valid range
-        payload.ftePercent = Math.max(10, Math.min(100, payload.ftePercent || 100))
+        payload.ftePercent = Math.max(10, Math.min(100, Number(staffFormData.ftePercent) || 100))
         // Convert empty subspecialtyId to null
-        if (!payload.subspecialtyId) {
+        if (!staffFormData.subspecialtyId) {
           payload.subspecialtyId = null
         }
       }
@@ -251,8 +253,8 @@ export function EditableSettings() {
                   <Label htmlFor="code">Code</Label>
                   <Input
                     id="code"
-                    value={formData.code || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, code: e.target.value }))}
+                    value={String(formData.code || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value }))}
                     placeholder="e.g. NEURO"
                   />
                 </div>
@@ -260,8 +262,8 @@ export function EditableSettings() {
                   <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                    value={String(formData.name || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Neuroradiology"
                   />
                 </div>
@@ -341,8 +343,8 @@ export function EditableSettings() {
                   <Label htmlFor="shift-code">Code</Label>
                   <Input
                     id="shift-code"
-                    value={formData.code || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, code: e.target.value }))}
+                    value={String(formData.code || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value }))}
                     placeholder="e.g. N1"
                   />
                 </div>
@@ -350,8 +352,8 @@ export function EditableSettings() {
                   <Label htmlFor="shift-name">Name</Label>
                   <Input
                     id="shift-name"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                    value={String(formData.name || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Neuro 1 (CT STAT, on site)"
                   />
                 </div>
@@ -363,8 +365,8 @@ export function EditableSettings() {
                   <Input
                     id="start-time"
                     type="time"
-                    value={formData.startTime || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, startTime: e.target.value }))}
+                    value={String(formData.startTime || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -372,16 +374,16 @@ export function EditableSettings() {
                   <Input
                     id="end-time"
                     type="time"
-                    value={formData.endTime || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, endTime: e.target.value }))}
+                    value={String(formData.endTime || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
                   />
                 </div>
                 <div className="flex items-center pt-6">
                   <input
                     type="checkbox"
                     id="all-day"
-                    checked={formData.isAllDay || false}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, isAllDay: e.target.checked }))}
+                    checked={Boolean(formData.isAllDay || false)}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, isAllDay: e.target.checked }))}
                     className="mr-2"
                   />
                   <Label htmlFor="all-day">All Day</Label>
@@ -396,10 +398,10 @@ export function EditableSettings() {
                       <input
                         type="checkbox"
                         id={day.key}
-                        checked={formData.recurrence?.[day.key] || false}
-                        onChange={(e) => setFormData((prev: any) => ({
+                        checked={Boolean((formData.recurrence as Record<string, boolean>)?.[day.key] || false)}
+                        onChange={(e) => setFormData((prev) => ({
                           ...prev,
-                          recurrence: { ...prev.recurrence, [day.key]: e.target.checked }
+                            recurrence: { ...(prev.recurrence as Record<string, boolean>), [day.key]: e.target.checked }
                         }))}
                         className="mr-2"
                       />
@@ -412,8 +414,8 @@ export function EditableSettings() {
               <div>
                 <Label htmlFor="eligibility">Eligibility</Label>
                 <Select
-                  value={formData.eligibilityType || 'allowAny'}
-                  onValueChange={(value) => setFormData((prev: any) => ({ ...prev, eligibilityType: value }))}
+                  value={String(formData.eligibilityType || 'any')}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, eligibilityType: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -430,8 +432,8 @@ export function EditableSettings() {
                 <div>
                   <Label htmlFor="required-subspecialty">Required Subspecialty</Label>
                   <Select
-                    value={formData.requiredSubspecialtyId || ''}
-                    onValueChange={(value) => setFormData((prev: any) => ({ ...prev, requiredSubspecialtyId: value }))}
+                    value={String(formData.requiredSubspecialtyId || '')}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, requiredSubspecialtyId: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select subspecialty" />
@@ -450,8 +452,8 @@ export function EditableSettings() {
                   <Label htmlFor="named-allowlist">Named Allowlist (comma-separated emails)</Label>
                   <Input
                     id="named-allowlist"
-                    value={formData.namedAllowlist || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, namedAllowlist: e.target.value }))}
+                    value={String(formData.namedAllowlist || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, namedAllowlist: e.target.value }))}
                     placeholder="email1@test.com, email2@test.com"
                   />
                 </div>
@@ -546,8 +548,8 @@ export function EditableSettings() {
                   <Label htmlFor="staff-name">Name</Label>
                   <Input
                     id="staff-name"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                    value={String(formData.name || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g. Dr. John Smith"
                   />
                 </div>
@@ -556,8 +558,8 @@ export function EditableSettings() {
                   <Input
                     id="staff-email"
                     type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => setFormData((prev: any) => ({ ...prev, email: e.target.value }))}
+                    value={String(formData.email || '')}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                     placeholder="e.g. jsmith@test.com"
                   />
                 </div>
@@ -565,8 +567,8 @@ export function EditableSettings() {
                   <div>
                     <Label htmlFor="staff-subspecialty">Subspecialty</Label>
                     <Select
-                      value={formData.subspecialtyId || ''}
-                      onValueChange={(value) => setFormData((prev: any) => ({ ...prev, subspecialtyId: value }))}
+                      value={String(formData.subspecialtyId || '')}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, subspecialtyId: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select subspecialty" />
@@ -587,8 +589,8 @@ export function EditableSettings() {
                       min="10"
                       max="100"
                       step="5"
-                      value={formData.ftePercent || ''}
-                      onChange={(e) => setFormData((prev: any) => ({ ...prev, ftePercent: parseInt(e.target.value) || 100 }))}
+                      value={String(formData.ftePercent || '')}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, ftePercent: parseInt(e.target.value) || 100 }))}
                       placeholder="100"
                     />
                   </div>

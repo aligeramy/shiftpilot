@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { StatsGrid } from "@/components/dashboard/stats-grid"
@@ -11,11 +11,7 @@ export function HomePageClient() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    checkOrganizationStatus()
-  }, [])
-
-  const checkOrganizationStatus = async () => {
+  const checkOrganizationStatus = useCallback(async () => {
     try {
       console.log('[HomePageClient] Checking organization status...')
       
@@ -38,7 +34,11 @@ export function HomePageClient() {
       // On error, assume we need onboarding
       router.push('/onboarding')
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    checkOrganizationStatus()
+  }, [checkOrganizationStatus])
 
   // Show loading state while checking organization status
   if (isLoading) {

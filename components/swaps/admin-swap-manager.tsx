@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import type { RawScheduleItem, EligiblePartnerForSwap, ScheduleAssignmentWithDetails } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
@@ -30,21 +31,7 @@ interface Assignment {
   }
 }
 
-interface EligiblePartner {
-  assignment: Assignment
-  swapType: 'SAME_TYPE' | 'EQUIVALENT_TYPE'
-  canSwap: boolean
-  conflicts: {
-    requester: any[]
-    target: any[]
-  }
-  eligibilityChecks: {
-    canRequesterWorkTarget: boolean
-    canTargetWorkRequester: boolean
-    isSameShiftType: boolean
-    isInEquivalenceSet: boolean
-  }
-}
+type EligiblePartner = EligiblePartnerForSwap
 
 export function AdminSwapManager({ organizationId }: SwapManagerProps) {
   const [assignments, setAssignments] = useState<Assignment[]>([])
@@ -53,12 +40,7 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Load assignments for the current month
-  useEffect(() => {
-    loadAssignments()
-  }, [])
-
-  const loadAssignments = async () => {
+  const loadAssignments = useCallback(async () => {
     try {
       setLoading(true)
       const now = new Date()
@@ -75,10 +57,10 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
       
       if (data.data?.rawSchedule && Array.isArray(data.data.rawSchedule)) {
         // The test API returns a flat array of schedule items
-        data.data.rawSchedule.forEach((scheduleItem: any) => {
+        data.data.rawSchedule.forEach((scheduleItem: RawScheduleItem) => {
           // Each schedule item has assignedTo array
           if (scheduleItem.assignedTo && Array.isArray(scheduleItem.assignedTo)) {
-            scheduleItem.assignedTo.forEach((assignedUser: any, index: number) => {
+            scheduleItem.assignedTo.forEach((assignedUser, index: number) => {
               allAssignments.push({
                 id: `${scheduleItem.date}-${scheduleItem.shiftCode}-${index}`, // Generate ID
                 date: scheduleItem.date,
@@ -87,7 +69,7 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
                   name: scheduleItem.shiftName,
                   startTime: scheduleItem.shiftTime.includes('-') ? scheduleItem.shiftTime.split('-')[0] : '08:00',
                   endTime: scheduleItem.shiftTime.includes('-') ? scheduleItem.shiftTime.split('-')[1] : '16:00',
-                  subspecialty: scheduleItem.requiredSubspecialty || 'General'
+                  subspecialty: assignedUser.subspecialty || 'General'
                 },
                 user: {
                   id: assignedUser.email, // Use email as ID
@@ -116,7 +98,12 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [organizationId])
+
+  // Load assignments for the current month
+  useEffect(() => {
+    loadAssignments()
+  }, [loadAssignments])
 
   const findEligiblePartners = async (assignment: Assignment) => {
     try {
@@ -157,7 +144,7 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
     }
   }
 
-  const createSwapRequest = async (targetAssignment: Assignment) => {
+  const createSwapRequest = async (targetAssignment: Assignment | ScheduleAssignmentWithDetails) => {
     if (!selectedAssignment) return
     
     try {
@@ -168,7 +155,7 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assignmentId: selectedAssignment.id,
-          notes: `Admin-initiated swap: ${selectedAssignment.user.name} (${selectedAssignment.shift.name}) ↔ ${targetAssignment.user.name} (${targetAssignment.shift.name})`
+          notes: `Admin-initiated swap: ${selectedAssignment.user.name} ↔ ${('shift' in targetAssignment ? targetAssignment.user.name : targetAssignment.user.name)}`
         })
       })
       
@@ -311,10 +298,10 @@ export function AdminSwapManager({ organizationId }: SwapManagerProps) {
                       <div className="text-sm text-muted-foreground space-y-1">
                         <div className="flex items-center gap-2">
                           <Clock className="h-3 w-3" />
-                          {partner.assignment.shift.name} ({partner.assignment.shift.startTime}-{partner.assignment.shift.endTime})
+                          {partner.assignment.instance.shiftType.name} ({partner.assignment.instance.shiftType.startTime}-{partner.assignment.instance.shiftType.endTime})
                         </div>
                         <div>
-                          Subspecialty: {partner.assignment.shift.subspecialty || 'General'}
+                          Subspecialty: {partner.assignment.instance.shiftType.requiredSubspecialtyId || 'General'}
                         </div>
                       </div>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import type { ScheduleInstanceForExport, UserForExport, ShiftTypeForExport } from '@/lib/types/api'
 
 export async function GET(request: NextRequest) {
   try {
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function generateCSV(instances: any[], users: any[], shifts: any[], year: number, month: number) {
+function generateCSV(instances: ScheduleInstanceForExport[], users: UserForExport[], shifts: ShiftTypeForExport[], year: number, month: number) {
   const lines = []
   
   // Header
@@ -169,18 +170,18 @@ function generateCSV(instances: any[], users: any[], shifts: any[], year: number
     const dateStr = instance.date.toISOString().split('T')[0]
     const dayOfWeek = instance.date.toLocaleDateString('en-US', { weekday: 'long' })
     
-    instance.assignments.forEach((assignment: any) => {
+    instance.assignments.forEach((assignment) => {
       lines.push([
         dateStr,
         dayOfWeek,
-        `\"${assignment.shift.name}\"`,
-        assignment.shift.startTime,
-        assignment.shift.endTime,
-        `\"${assignment.shift.subspecialty || ''}\"`,
+        `\"${instance.shiftType.name}\"`,
+        instance.shiftType.startTime,
+        instance.shiftType.endTime,
+        `\"${instance.shiftType.requiredSubspecialtyId || ''}\"`,
         `\"${assignment.user.name}\"`,
         assignment.user.email,
         assignment.assignmentType,
-        assignment.shift.equivalenceCode || ''
+        instance.shiftType.code || ''
       ].join(','))
     })
   })
@@ -195,7 +196,7 @@ function generateCSV(instances: any[], users: any[], shifts: any[], year: number
   })
 }
 
-function generateHTML(instances: any[], users: any[], shifts: any[], year: number, month: number) {
+function generateHTML(instances: ScheduleInstanceForExport[], users: UserForExport[], shifts: ShiftTypeForExport[], year: number, month: number) {
   const monthName = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long' })
   
   let html = `
@@ -248,16 +249,16 @@ function generateHTML(instances: any[], users: any[], shifts: any[], year: numbe
     if (instance.assignments.length === 0) {
       html += `<div class=\"assignment\">No assignments</div>`
     } else {
-      instance.assignments.forEach((assignment: any) => {
+      instance.assignments.forEach((assignment) => {
         const cssClass = assignment.assignmentType === 'SWAPPED' ? 'swapped' : 
                         assignment.assignmentType === 'MANUAL' ? 'manual' : ''
         
         html += `
             <div class=\"assignment ${cssClass}\">
                 <div>
-                    <div class=\"shift-info\">${assignment.shift.name}</div>
-                    <div class=\"time-info\">${assignment.shift.startTime} - ${assignment.shift.endTime}</div>
-                    ${assignment.shift.subspecialty ? `<div class=\"time-info\">Subspecialty: ${assignment.shift.subspecialty}</div>` : ''}
+                    <div class=\"shift-info\">${instance.shiftType.name}</div>
+                    <div class=\"time-info\">${instance.shiftType.startTime} - ${instance.shiftType.endTime}</div>
+                    ${instance.shiftType.requiredSubspecialtyId ? `<div class=\"time-info\">Subspecialty: ${instance.shiftType.requiredSubspecialtyId}</div>` : ''}
                 </div>
                 <div>
                     <div class=\"user-info\">${assignment.user.name}</div>

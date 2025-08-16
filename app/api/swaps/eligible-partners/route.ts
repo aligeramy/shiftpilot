@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import type { UserWithProfile, ShiftTypeDetails, TimeConflict } from '@/lib/types/api'
 
 export async function GET(request: NextRequest) {
   try {
@@ -196,10 +197,10 @@ export async function GET(request: NextRequest) {
 async function checkTimeConflicts(
   userId: string,
   date: Date,
-  shift: any,
+  shift: ShiftTypeDetails,
   organizationId: string,
   excludeAssignmentIds: string[] = []
-): Promise<any[]> {
+): Promise<TimeConflict[]> {
   // Find all assignments for this user on the same date
   const userAssignments = await prisma.scheduleAssignment.findMany({
     where: {
@@ -250,8 +251,8 @@ async function checkTimeConflicts(
 }
 
 async function checkEligibility(
-  user: any,
-  shift: any
+  user: UserWithProfile,
+  shift: ShiftTypeDetails
 ): Promise<boolean> {
   // Check eligibility based on shift requirements
   if (shift.allowAny) {

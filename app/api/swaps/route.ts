@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { SwapStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,18 +14,12 @@ export async function GET(request: NextRequest) {
     const status = url.searchParams.get('status')
     const userId = url.searchParams.get('userId')
 
-    const where: any = {
+    const where = {
       requester: {
         organizationId: session.user.organizationId
-      }
-    }
-
-    if (status) {
-      where.status = status
-    }
-
-    if (userId) {
-      where.requesterId = userId
+      },
+      ...(status && { status: status as SwapStatus }),
+      ...(userId && { requesterId: userId })
     }
 
     const swapRequests = await prisma.swapRequest.findMany({

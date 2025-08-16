@@ -3,15 +3,18 @@
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
+interface RosterImportData {
+  roster: unknown[]
+}
+
 interface RosterImportProps {
   organizationId: string
-  onComplete: (data: any) => void
+  onComplete: (data: RosterImportData) => void
   onBack: () => void
   isLoading?: boolean
 }
 
 export function RosterImport({ 
-  organizationId, 
   onComplete, 
   onBack,
   isLoading 

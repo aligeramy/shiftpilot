@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { toast } from 'sonner'
+import type { RawScheduleItem } from '@/lib/types/api'
 
 interface ScheduleAssignment {
   id: string
@@ -73,7 +74,7 @@ export function ScheduleCalendar() {
   const [filterRadiologist, setFilterRadiologist] = useState<string>('all')
   const [orgId, setOrgId] = useState<string | null>(null)
 
-  const loadSchedule = async () => {
+  const loadSchedule = useCallback(async () => {
     setLoading(true)
     try {
       // Ensure we have an organization; seed if not present in state
@@ -115,30 +116,30 @@ export function ScheduleCalendar() {
         
         // Transform to assignments format
         const assignmentData = scheduleData
-          .filter((item: unknown) => (item as any).assignedTo && (item as any).assignedTo.length > 0)
-          .flatMap((item: unknown) => 
-            (item as any).assignedTo.map((assignment: unknown) => ({
-              id: `${(item as any).date}-${(item as any).shiftCode}-${(assignment as any).email}`,
+          .filter((item: RawScheduleItem) => item.assignedTo && item.assignedTo.length > 0)
+          .flatMap((item: RawScheduleItem) => 
+            item.assignedTo.map((assignment) => ({
+              id: `${item.date}-${item.shiftCode}-${assignment.email}`,
               instance: {
-                date: (item as any).date,
-                startTime: (item as any).shiftTime.split('-')[0] || '08:00',
-                endTime: (item as any).shiftTime.split('-')[1] || '16:00',
+                date: item.date,
+                startTime: item.shiftTime.split('-')[0] || '08:00',
+                endTime: item.shiftTime.split('-')[1] || '16:00',
                 shiftType: {
-                  code: (item as any).shiftCode,
-                  name: (item as any).shiftName,
-                  requiredSubspecialty: (assignment as any).subspecialty ? {
-                    name: (assignment as any).subspecialty,
-                    code: (assignment as any).subspecialty.split(' ')[0]?.toUpperCase() || 'OTHER'
+                  code: item.shiftCode,
+                  name: item.shiftName,
+                  requiredSubspecialty: assignment.subspecialty ? {
+                    name: assignment.subspecialty,
+                    code: assignment.subspecialty.split(' ')[0]?.toUpperCase() || 'OTHER'
                   } : null
                 }
               },
               user: {
-                name: (assignment as any).name,
-                email: (assignment as any).email,
+                name: assignment.name,
+                email: assignment.email,
                 radiologistProfile: {
                   subspecialty: {
-                    name: (assignment as any).subspecialty || 'General',
-                    code: (assignment as any).subspecialty?.split(' ')[0]?.toUpperCase() || 'OTHER'
+                    name: assignment.subspecialty || 'General',
+                    code: assignment.subspecialty?.split(' ')[0]?.toUpperCase() || 'OTHER'
                   }
                 }
               }
@@ -156,7 +157,7 @@ export function ScheduleCalendar() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [orgId, selectedYear, selectedMonth])
 
   useEffect(() => {
     loadSchedule()
@@ -235,7 +236,7 @@ export function ScheduleCalendar() {
       })
     // Expose to weekly matrix via window for the schedule page weekly tab
     if (typeof window !== 'undefined') {
-      ;(window as any).__scheduleAssignments = assignments
+      ;(window as Window & { __scheduleAssignments?: typeof assignments }).__scheduleAssignments = assignments
     }
     return evts
   }, [assignments, filterSubspecialty, filterRadiologist])

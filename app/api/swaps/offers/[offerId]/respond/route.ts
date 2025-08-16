@@ -83,7 +83,7 @@ export async function POST(
       const updatedOffer = await tx.swapOffer.update({
         where: { id: offerId },
         data: {
-          status: response as any,
+          status: response as 'ACCEPTED' | 'DECLINED',
           respondedAt: new Date(),
           response: notes
         }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { DashboardPage } from '@/components/dashboard/dashboard-page'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -77,8 +77,21 @@ export default function OnboardingPage() {
   const [showShowcase, setShowShowcase] = useState(false)
   const [organizationData, setOrganizationData] = useState<OrganizationData | null>(null)
   
+  // Load complete organization data for showcase
+  const loadOrganizationData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/settings/overview')
+      const data = await response.json()
+      if (data.success) {
+        setOrganizationData(data)
+      }
+    } catch (error) {
+      console.error('Failed to load organization data:', error)
+    }
+  }, [])
+
   // Check if user has an organization and their onboarding status
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/onboarding/status')
       const data = await response.json()
@@ -96,20 +109,7 @@ export default function OnboardingPage() {
     } catch (error) {
       console.error('Failed to check onboarding status:', error)
     }
-  }
-
-  // Load complete organization data for showcase
-  const loadOrganizationData = async () => {
-    try {
-      const response = await fetch('/api/settings/overview')
-      const data = await response.json()
-      if (data.success) {
-        setOrganizationData(data)
-      }
-    } catch (error) {
-      console.error('Failed to load organization data:', error)
-    }
-  }
+  }, [loadOrganizationData])
 
   useEffect(() => {
     checkOnboardingStatus()

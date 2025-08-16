@@ -13,9 +13,9 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn", // Allow any types as warnings for now
-      "@typescript-eslint/no-unused-vars": "warn",  // Allow unused vars as warnings
-      "react-hooks/exhaustive-deps": "warn",        // Allow missing deps as warnings
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": "error",
+      "react-hooks/exhaustive-deps": "error",
     }
   }
 ];

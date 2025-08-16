@@ -12,28 +12,11 @@ import { RefreshCw, Calendar, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 export default function SchedulePage() {
-  const [viewYear, setViewYear] = useState(new Date().getFullYear())
-  const [viewMonth, setViewMonth] = useState(new Date().getMonth() + 1)
+  const [viewYear] = useState(new Date().getFullYear())
+  const [viewMonth] = useState(new Date().getMonth() + 1)
   
-  const { assignments, loading, error, generateSchedule, loadSchedule, resetSchedule } = useSchedule(viewYear, viewMonth)
+  const { assignments, loading, error, generateSchedule, loadSchedule } = useSchedule(viewYear, viewMonth)
   
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      if (viewMonth === 1) {
-        setViewMonth(12)
-        setViewYear(viewYear - 1)
-      } else {
-        setViewMonth(viewMonth - 1)
-      }
-    } else {
-      if (viewMonth === 12) {
-        setViewMonth(1)
-        setViewYear(viewYear + 1)
-      } else {
-        setViewMonth(viewMonth + 1)
-      }
-    }
-  }
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',

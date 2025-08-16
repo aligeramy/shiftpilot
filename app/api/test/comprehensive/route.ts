@@ -263,23 +263,8 @@ async function testFairnessSystem(): Promise<TestSuite> {
         }
       })
       
-      const assignments = await prisma.scheduleAssignment.findMany({
-        where: {
-          instance: {
-            organizationId: org.id,
-            date: {
-              gte: new Date(2025, 7, 1),
-              lt: new Date(2025, 8, 1)
-            }
-          }
-        },
-        include: {
-          instance: true,
-          user: true
-        }
-      })
       
-      const fairnessScores = calculateFairnessScores(preferences, assignments)
+      const fairnessScores = calculateFairnessScores(preferences)
       
       results.push({
         testName: 'Fairness Point Calculation',
@@ -665,7 +650,7 @@ async function testPerformance(): Promise<TestSuite> {
 
 // Helper Functions
 
-function calculateFairnessScores(preferences: unknown[], assignments: unknown[]) {
+function calculateFairnessScores(preferences: unknown[]) {
   // Simplified fairness calculation for testing
   const userScores = new Map()
   

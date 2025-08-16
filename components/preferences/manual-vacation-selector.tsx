@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,23 +41,7 @@ export function ManualVacationSelector({
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    generateAvailableWeeks()
-  }, [year, month])
-
-  useEffect(() => {
-    // Initialize with current preferences if they exist
-    if (currentPreferences.length > 0 && availableWeeks.length > 0) {
-      const preSelectedWeeks = currentPreferences.map(pref => {
-        const matchingWeek = availableWeeks.find(w => w.weekNumber === pref.weekNumber)
-        return matchingWeek
-      }).filter(Boolean) as VacationWeek[]
-      
-      setSelectedWeeks(preSelectedWeeks)
-    }
-  }, [currentPreferences, availableWeeks])
-
-  const generateAvailableWeeks = () => {
+  const generateAvailableWeeks = useCallback(() => {
     setLoading(true)
     const weeks: VacationWeek[] = []
     const firstDay = new Date(year, month - 1, 1)
@@ -93,7 +77,23 @@ export function ManualVacationSelector({
     
     setAvailableWeeks(weeks)
     setLoading(false)
-  }
+  }, [year, month])
+
+  useEffect(() => {
+    generateAvailableWeeks()
+  }, [year, month, generateAvailableWeeks])
+
+  useEffect(() => {
+    // Initialize with current preferences if they exist
+    if (currentPreferences.length > 0 && availableWeeks.length > 0) {
+      const preSelectedWeeks = currentPreferences.map(pref => {
+        const matchingWeek = availableWeeks.find(w => w.weekNumber === pref.weekNumber)
+        return matchingWeek
+      }).filter(Boolean) as VacationWeek[]
+      
+      setSelectedWeeks(preSelectedWeeks)
+    }
+  }, [currentPreferences, availableWeeks])
 
   const toggleWeekSelection = (week: VacationWeek) => {
     const isSelected = selectedWeeks.some(w => w.weekNumber === week.weekNumber)

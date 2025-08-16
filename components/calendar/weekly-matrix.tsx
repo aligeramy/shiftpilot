@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
+import type { RawScheduleItem, FairnessResult } from '@/lib/types/api'
 
 type AssignmentInput = {
   id: string
@@ -160,18 +161,18 @@ export function WeeklyMatrix({ assignments, year, month }: Props) {
       const schedJson = await schedResp.json()
       const raw = schedJson.data?.rawSchedule || []
       const mapped: AssignmentInput[] = raw
-        .filter((item: unknown) => (item as any).assignedTo && (item as any).assignedTo.length > 0)
-        .flatMap((item: unknown) =>
-          (item as any).assignedTo.map((a: unknown) => ({
-            id: `${(item as any).date}-${(item as any).shiftCode}-${(a as any).email}`,
+        .filter((item: RawScheduleItem) => item.assignedTo && item.assignedTo.length > 0)
+        .flatMap((item: RawScheduleItem) =>
+          item.assignedTo.map((a) => ({
+            id: `${item.date}-${item.shiftCode}-${a.email}`,
             instance: {
-              date: (item as any).date,
-              startTime: ((item as any).shiftTime?.split('-')[0]) || '08:00',
-              endTime: ((item as any).shiftTime?.split('-')[1]) || '16:00',
-              shiftType: { code: (item as any).shiftCode, name: (item as any).shiftName },
+              date: item.date,
+              startTime: (item.shiftTime?.split('-')[0]) || '08:00',
+              endTime: (item.shiftTime?.split('-')[1]) || '16:00',
+              shiftType: { code: item.shiftCode, name: item.shiftName },
             },
-            user: { name: (a as any).name, email: (a as any).email },
-            assignmentType: (a as any).assignmentType,
+            user: { name: a.name, email: a.email },
+            assignmentType: 'GENERATED' as const,
           }))
         )
       setLocalAssignments(mapped)
@@ -182,12 +183,12 @@ export function WeeklyMatrix({ assignments, year, month }: Props) {
         const fairResp = await fetch(`/api/fairness/${selectedYear}/${selectedMonth}`)
         if (fairResp.ok) {
           const fairJson = await fairResp.json()
-          const ys = (fairJson.results || []).map((r: unknown) => (r as any).ytdPoints)
+          const ys = (fairJson.results || []).map((r: FairnessResult) => r.ytdPoints)
           if (ys.length > 0) {
             const min = Math.min(...ys)
             const max = Math.max(...ys)
             setFairness({ min, max })
-            ;(window as any).__fairness = fairJson.results
+            ;(window as Window & { __fairness?: FairnessResult[] }).__fairness = fairJson.results
           }
         }
       } catch {}
@@ -204,12 +205,12 @@ export function WeeklyMatrix({ assignments, year, month }: Props) {
       const fairResp = await fetch(`/api/fairness/${selectedYear}/${selectedMonth}`)
       if (fairResp.ok) {
         const fairJson = await fairResp.json()
-        const ys = (fairJson.results || []).map((r: unknown) => (r as any).ytdPoints)
+        const ys = (fairJson.results || []).map((r: FairnessResult) => r.ytdPoints)
         if (ys.length > 0) {
           const min = Math.min(...ys)
           const max = Math.max(...ys)
           setFairness({ min, max })
-          ;(window as any).__fairness = fairJson.results
+          ;(window as Window & { __fairness?: FairnessResult[] }).__fairness = fairJson.results
         }
       }
     } catch {}

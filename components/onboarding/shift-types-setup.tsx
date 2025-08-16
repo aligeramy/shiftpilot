@@ -3,15 +3,18 @@
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
+interface ShiftTypesSetupData {
+  shiftTypes: unknown[]
+}
+
 interface ShiftTypesSetupProps {
   organizationId: string
-  onComplete: (data: any) => void
+  onComplete: (data: ShiftTypesSetupData) => void
   onBack: () => void
   isLoading?: boolean
 }
 
 export function ShiftTypesSetup({ 
-  organizationId, 
   onComplete, 
   onBack,
   isLoading 

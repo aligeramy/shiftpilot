@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Building, Clock, Users, Settings, ArrowLeft } from "lucide-react"
+import type { ShiftRecurrence, ShiftEligibility, ShiftTypeWithDetails } from "@/lib/types/api"
 
 interface OrganizationData {
   organization: {
@@ -62,7 +63,7 @@ export function OrganizationOverview() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedSubspecialty, setSelectedSubspecialty] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'overview' | 'subspecialty'>('overview')
-  const [selectedShift, setSelectedShift] = useState<any | null>(null)
+  const [selectedShift, setSelectedShift] = useState<ShiftTypeWithDetails | null>(null)
 
   // Color mapping for subspecialties and shift types
   const subspecialtyColors = {
@@ -76,14 +77,6 @@ export function OrganizationOverview() {
     'ANY': 'bg-slate-100 text-slate-800 border-slate-200'
   }
 
-  const getShiftColor = (shift: any) => {
-    if (shift.eligibility.allowAny) return subspecialtyColors['ANY']
-    if (shift.eligibility.requiredSubspecialty) {
-      return subspecialtyColors[shift.eligibility.requiredSubspecialty.code as keyof typeof subspecialtyColors] || subspecialtyColors['ANY']
-    }
-    if (shift.eligibility.namedAllowlist?.length > 0) return 'bg-orange-100 text-orange-800 border-orange-200'
-    return subspecialtyColors['ANY']
-  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,7 +121,7 @@ export function OrganizationOverview() {
     )
   }
 
-  const getDaysOfWeek = (recurrence: any) => {
+  const getDaysOfWeek = (recurrence: ShiftRecurrence) => {
     const days = []
     if (recurrence.mon) days.push('Mon')
     if (recurrence.tue) days.push('Tue')
@@ -140,14 +133,14 @@ export function OrganizationOverview() {
     return days.join(', ')
   }
 
-  const getEligibilityText = (eligibility: any) => {
+  const getEligibilityText = (eligibility: ShiftEligibility) => {
     if (eligibility.allowAny) return 'Any radiologist'
     if (eligibility.requiredSubspecialty) return eligibility.requiredSubspecialty.name
     if (eligibility.namedAllowlist?.length > 0) return `Named: ${eligibility.namedAllowlist.length} people`
     return 'Not configured'
   }
 
-  const getEligibleStaff = (shift: any) => {
+  const getEligibleStaff = (shift: ShiftTypeWithDetails) => {
     if (!data?.staff) return []
     
     if (shift.eligibility.allowAny) {
@@ -156,7 +149,7 @@ export function OrganizationOverview() {
     
     if (shift.eligibility.requiredSubspecialty) {
       return data.staff.filter(person => 
-        person.subspecialty === shift.eligibility.requiredSubspecialty.code
+        person.subspecialty === shift.eligibility.requiredSubspecialty?.code
       )
     }
     
@@ -169,7 +162,7 @@ export function OrganizationOverview() {
     return []
   }
 
-  const handleShiftClick = (shift: any) => {
+  const handleShiftClick = (shift: ShiftTypeWithDetails) => {
     setSelectedShift(selectedShift?.id === shift.id ? null : shift)
   }
 

@@ -67,7 +67,7 @@ export interface GenerationResult {
 }
 
 // In-memory lock to prevent concurrent generations for the same period
-const generationLocks = new Map<string, Promise<any>>()
+const generationLocks = new Map<string, Promise<GenerationResult>>()
 
 export class ScheduleGenerator {
   private organizationId: string

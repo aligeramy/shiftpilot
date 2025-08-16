@@ -31,7 +31,6 @@ const DEFAULT_SUBSPECIALTIES: Subspecialty[] = [
 ]
 
 export function SubspecialtiesSetup({ 
-  organizationId, 
   onComplete, 
   onBack,
   isLoading 

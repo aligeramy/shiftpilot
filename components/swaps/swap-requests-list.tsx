@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Clock, User, Calendar, ArrowRightLeft, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
+import type { SwapRequestFromApi } from '@/lib/types/api'
 
 interface SwapRequest {
   id: string
@@ -55,16 +56,12 @@ interface SwapRequestsListProps {
   showAll?: boolean
 }
 
-export function SwapRequestsList({ organizationId, showAll = false }: SwapRequestsListProps) {
+export function SwapRequestsList({ showAll = false }: SwapRequestsListProps) {
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadSwapRequests()
-  }, [])
-
-  const loadSwapRequests = async () => {
+  const loadSwapRequests = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -79,7 +76,7 @@ export function SwapRequestsList({ organizationId, showAll = false }: SwapReques
       console.log('Raw swap data:', data) // Debug log
       
       // Transform the data to match our interface
-      const transformedRequests = (data.swapRequests || []).map((request: any) => ({
+      const transformedRequests = (data.swapRequests || []).map((request: SwapRequestFromApi) => ({
         id: request.id,
         status: request.status,
         notes: request.notes,
@@ -92,10 +89,10 @@ export function SwapRequestsList({ organizationId, showAll = false }: SwapReques
             name: request.assignment.instance.shiftType.name,
             startTime: request.assignment.instance.shiftType.startTime,
             endTime: request.assignment.instance.shiftType.endTime,
-            subspecialty: request.assignment.instance.shiftType.requiredSubspecialtyId || 'General'
+            subspecialty: 'General'
           }
         },
-        offers: (request.offers || []).map((offer: any) => ({
+        offers: (request.offers || []).map((offer) => ({
           id: offer.id,
           status: offer.status,
           notes: offer.notes,
@@ -107,7 +104,7 @@ export function SwapRequestsList({ organizationId, showAll = false }: SwapReques
               name: offer.targetAssignment?.instance?.shiftType?.name || '',
               startTime: offer.targetAssignment?.instance?.shiftType?.startTime || '',
               endTime: offer.targetAssignment?.instance?.shiftType?.endTime || '',
-              subspecialty: offer.targetAssignment?.instance?.shiftType?.requiredSubspecialtyId || 'General'
+              subspecialty: 'General'
             }
           }
         }))
@@ -119,7 +116,11 @@ export function SwapRequestsList({ organizationId, showAll = false }: SwapReques
     } finally {
       setLoading(false)
     }
-  }
+  }, [showAll])
+
+  useEffect(() => {
+    loadSwapRequests()
+  }, [loadSwapRequests])
 
   const respondToOffer = async (offerId: string, response: 'ACCEPTED' | 'DECLINED', notes?: string) => {
     try {

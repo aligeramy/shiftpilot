@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import type { RadiologistForPreferences, VacationPreference } from '@/lib/types/api'
 
 interface VacationPreferenceFormProps {
-  radiologist: any
+  radiologist: RadiologistForPreferences
   onUpdate: () => void
   onClose: () => void
 }
@@ -58,9 +59,9 @@ export function VacationPreferenceForm({ radiologist, onUpdate, onClose }: Vacat
           </Badge>
         </div>
 
-        {radiologist.vacationPreferences?.length > 0 && (
+        {(radiologist.vacationPreferences?.length ?? 0) > 0 && (
           <div className="space-y-2">
-            {radiologist.vacationPreferences.map((pref: any, index: number) => (
+            {radiologist.vacationPreferences?.map((pref: VacationPreference) => (
               <div key={pref.id} className="flex items-center justify-between p-3 border rounded">
                 <div>
                   <p className="font-medium">Choice #{pref.rank}</p>
