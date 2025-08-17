@@ -18,7 +18,9 @@ import {
   Building2, 
   Star, 
   Clock, 
-  Users
+  Users,
+  GraduationCap,
+  UserCheck
 } from 'lucide-react'
 
 interface SettingsData {
@@ -63,6 +65,8 @@ interface SettingsData {
     subspecialty: string | null
     subspecialtyName: string | null
     ftePercent: number | null
+    isFellow: boolean
+    isResident: boolean
   }>
 }
 
@@ -129,7 +133,7 @@ export function EditableSettings() {
           })
           break
         case 'staff':
-          setFormData({ name: '', email: '', subspecialtyId: '', ftePercent: 100 })
+          setFormData({ name: '', email: '', subspecialtyId: '', ftePercent: 100, isFellow: false, isResident: false })
           break
       }
     } else if (mode === 'edit' && item) {
@@ -149,7 +153,9 @@ export function EditableSettings() {
           setFormData({ 
             ...item, 
             subspecialtyId: '',
-            ftePercent: 100
+            ftePercent: 100,
+            isFellow: item.isFellow || false,
+            isResident: item.isResident || false
           })
           break
       }
@@ -595,6 +601,39 @@ export function EditableSettings() {
                     />
                   </div>
                 </div>
+                
+                {/* Learner Status Section */}
+                <div className="border-t pt-4">
+                  <Label className="text-sm font-medium mb-3 block">Learner Status</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="staff-fellow"
+                        checked={Boolean(formData.isFellow)}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, isFellow: e.target.checked }))}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <Label htmlFor="staff-fellow" className="flex items-center gap-2 cursor-pointer">
+                        <GraduationCap className="h-4 w-4 text-blue-600" />
+                        Fellow
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="staff-resident"
+                        checked={Boolean(formData.isResident)}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, isResident: e.target.checked }))}
+                        className="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                      <Label htmlFor="staff-resident" className="flex items-center gap-2 cursor-pointer">
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                        Resident
+                      </Label>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <Button size="sm" onClick={handleSave}>
@@ -627,6 +666,18 @@ export function EditableSettings() {
                     {person.subspecialtyName || 'No Subspecialty'}
                   </Badge>
                   <span>{person.ftePercent || 100}% FTE</span>
+                  {person.isFellow && (
+                    <Badge className="text-xs bg-purple-100 text-purple-800 flex items-center gap-1">
+                      <GraduationCap className="h-3 w-3" />
+                      Fellow
+                    </Badge>
+                  )}
+                  {person.isResident && (
+                    <Badge className="text-xs bg-green-100 text-green-800 flex items-center gap-1">
+                      <UserCheck className="h-3 w-3" />
+                      Resident
+                    </Badge>
+                  )}
                 </div>
               </div>
               

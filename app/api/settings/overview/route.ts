@@ -66,7 +66,9 @@ export async function GET() {
         email: u.email,
         subspecialty: u.radiologistProfile?.subspecialty?.code || null,
         subspecialtyName: u.radiologistProfile?.subspecialty?.name || null,
-        ftePercent: u.radiologistProfile?.ftePercent || null
+        ftePercent: u.radiologistProfile?.ftePercent || null,
+        isFellow: u.radiologistProfile?.isFellow || false,
+        isResident: u.radiologistProfile?.isResident || false
       }))
     })
   } catch (error) {

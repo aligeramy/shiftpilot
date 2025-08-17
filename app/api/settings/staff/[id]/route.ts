@@ -22,7 +22,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const body = await request.json()
-    const { name, email, subspecialtyId, ftePercent } = body
+    const { name, email, subspecialtyId, ftePercent, isFellow, isResident } = body
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
@@ -89,7 +89,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           where: { userId: params.id },
           data: {
             subspecialtyId: validSubspecialtyId,
-            ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
+            ftePercent: Math.max(10, Math.min(100, ftePercent || 100)),
+            isFellow: Boolean(isFellow),
+            isResident: Boolean(isResident)
           }
         })
       } else {
@@ -97,16 +99,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           data: {
             userId: params.id,
             subspecialtyId: validSubspecialtyId,
-            ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
+            ftePercent: Math.max(10, Math.min(100, ftePercent || 100)),
+            isFellow: Boolean(isFellow),
+            isResident: Boolean(isResident)
           }
         })
       }
     } else if (existingStaff.radiologistProfile) {
-      // If no subspecialty provided but profile exists, just update FTE
+      // If no subspecialty provided but profile exists, just update FTE and learner status
       await prisma.radiologyProfile.update({
         where: { userId: params.id },
         data: {
-          ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
+          ftePercent: Math.max(10, Math.min(100, ftePercent || 100)),
+          isFellow: Boolean(isFellow),
+          isResident: Boolean(isResident)
         }
       })
     }
@@ -131,7 +137,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         email: updatedStaff!.email,
         subspecialty: updatedStaff!.radiologistProfile?.subspecialty?.code || null,
         subspecialtyName: updatedStaff!.radiologistProfile?.subspecialty?.name || null,
-        ftePercent: updatedStaff!.radiologistProfile?.ftePercent || 100
+        ftePercent: updatedStaff!.radiologistProfile?.ftePercent || 100,
+        isFellow: updatedStaff!.radiologistProfile?.isFellow || false,
+        isResident: updatedStaff!.radiologistProfile?.isResident || false
       }
     })
 

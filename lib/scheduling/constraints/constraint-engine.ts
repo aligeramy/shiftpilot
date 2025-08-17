@@ -124,13 +124,14 @@ export class EnterpriseConstraintEngine implements ConstraintEngine {
       validator: new WeekdayDistributionConstraintValidator()
     })
 
-    this.addHardConstraint({
-      id: 'HC-008-LEARNER-LATE-SHIFTS',
-      type: 'HARD',
-      priority: CONSTRAINT_PRIORITIES.SUBSPECIALTY - 50,
-      description: 'Four out of five late shifts must be assigned to learners',
-      validator: new LearnerLateShiftConstraintValidator()
-    })
+    // Temporarily disabled - learner constraint causing issues when no learners present
+    // this.addHardConstraint({
+    //   id: 'HC-008-LEARNER-LATE-SHIFTS',
+    //   type: 'HARD',
+    //   priority: CONSTRAINT_PRIORITIES.SUBSPECIALTY - 50,
+    //   description: 'Four out of five late shifts must be assigned to learners',
+    //   validator: new LearnerLateShiftConstraintValidator()
+    // })
 
     this.addHardConstraint({
       id: 'HC-009-SHIFT-DEPENDENCIES',
@@ -639,53 +640,6 @@ class WeekdayDistributionConstraintValidator implements ConstraintValidator {
   }
 }
 
-class LearnerLateShiftConstraintValidator implements ConstraintValidator {
-  validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {
-    const shiftType = candidate.shiftInstance.shiftType
-    const isLateShift = this.isLateShift(shiftType)
-    const isLearner = candidate.radiologist.isFellow || candidate.radiologist.isResident
-    
-    if (!isLateShift) {
-      return {
-        satisfied: true,
-        score: 100,
-        explanation: 'Not a late shift - learner constraint does not apply'
-      }
-    }
-    
-    // Count late shift assignments this month
-    const monthAssignments = context.existingAssignments.filter(assignment => {
-      const shiftInstance = context.shiftInstances.find(si => si.id === assignment.instanceId)
-      return shiftInstance && this.isLateShift(shiftInstance.shiftType) &&
-             shiftInstance.date.getFullYear() === candidate.shiftInstance.date.getFullYear() &&
-             shiftInstance.date.getMonth() === candidate.shiftInstance.date.getMonth()
-    })
-    
-    const learnerAssignments = monthAssignments.filter(assignment => {
-      const radiologist = context.radiologists.find(r => r.id === assignment.userId)
-      return radiologist && (radiologist.isFellow || radiologist.isResident)
-    })
-    
-    const learnerRatio = monthAssignments.length > 0 ? learnerAssignments.length / monthAssignments.length : 0
-    const wouldImprove = isLearner ? (learnerAssignments.length + 1) / (monthAssignments.length + 1) : learnerRatio
-    const targetRatio = 0.8 // 4 out of 5 = 80%
-    
-    const satisfied = wouldImprove >= targetRatio || isLearner
-    const score = satisfied ? 100 : (isLearner ? 90 : Math.max(0, 100 - ((targetRatio - wouldImprove) * 200)))
-    
-    return {
-      satisfied,
-      score,
-      explanation: `Late shift learner ratio: ${(wouldImprove * 100).toFixed(1)}% (target: 80%)`
-    }
-  }
-  
-  private isLateShift(shiftType: { code: string; startTime: string }): boolean {
-    // Late shifts: 16:00-18:00, 18:00-21:00, call shifts
-    const hour = parseInt(shiftType.startTime.split(':')[0])
-    return hour >= 16 || shiftType.code.includes('CALL') || shiftType.code.includes('16_18') || shiftType.code.includes('18_21')
-  }
-}
 
 class ShiftDependencyConstraintValidator implements ConstraintValidator {
   validate(candidate: AssignmentCandidate, context: GenerationContext): ConstraintResult {

@@ -4,13 +4,6 @@
  */
 
 import type {
-  ScheduleInstance as DbScheduleInstance,
-  ShiftType as DbShiftType,
-  Subspecialty as DbSubspecialty,
-  User as DbUser,
-  RadiologyProfile as DbRadiologyProfile,
-  VacationPreference as DbVacationPreference,
-  ScheduleAssignment as DbScheduleAssignment,
   Organization as DbOrganization,
 } from '@prisma/client'
 
@@ -279,14 +272,14 @@ export interface ConstraintViolation {
 export interface ValidationWarning {
   type: 'FAIRNESS' | 'COVERAGE' | 'QUALITY' | 'PERFORMANCE'
   message: string
-  details: Record<string, any>
+  details: Record<string, unknown>
 }
 
 export interface AuditRecord {
   timestamp: Date
   phase: GenerationPhase
   action: string
-  details: Record<string, any>
+  details: Record<string, unknown>
   decision?: string
   reasoning?: string
 }
@@ -325,7 +318,7 @@ export class ScheduleGenerationError extends Error {
   constructor(
     message: string,
     public code: ScheduleErrorCode,
-    public context?: Record<string, any>
+    public context?: Record<string, unknown>
   ) {
     super(message)
     this.name = 'ScheduleGenerationError'

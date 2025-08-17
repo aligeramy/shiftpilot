@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, email, subspecialtyId, ftePercent } = body
+    const { name, email, subspecialtyId, ftePercent, isFellow, isResident } = body
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
@@ -74,7 +74,9 @@ export async function POST(request: Request) {
         data: {
           userId: newUser.id,
           subspecialtyId: validSubspecialtyId,
-          ftePercent: Math.max(10, Math.min(100, ftePercent || 100))
+          ftePercent: Math.max(10, Math.min(100, ftePercent || 100)),
+          isFellow: Boolean(isFellow),
+          isResident: Boolean(isResident)
         }
       })
     }
@@ -99,7 +101,9 @@ export async function POST(request: Request) {
         email: finalUser!.email,
         subspecialty: finalUser!.radiologistProfile?.subspecialty?.code || null,
         subspecialtyName: finalUser!.radiologistProfile?.subspecialty?.name || null,
-        ftePercent: finalUser!.radiologistProfile?.ftePercent || 100
+        ftePercent: finalUser!.radiologistProfile?.ftePercent || 100,
+        isFellow: finalUser!.radiologistProfile?.isFellow || false,
+        isResident: finalUser!.radiologistProfile?.isResident || false
       }
     })
 

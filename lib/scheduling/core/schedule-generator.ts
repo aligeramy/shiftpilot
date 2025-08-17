@@ -513,8 +513,11 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
     // Load vacation preferences
     const vacationPreferences = await this.loadVacationPreferences(config)
     
-    // Build vacation blocks
-    const vacationBlocks = this.buildVacationBlocks(vacationPreferences)
+    // Process vacation preferences (PENDING -> APPROVED/REJECTED)
+    const processedPreferences = await this.optimizeVacationPreferences(vacationPreferences, radiologists)
+    
+    // Build vacation blocks from processed preferences
+    const vacationBlocks = this.buildVacationBlocks(processedPreferences)
     
     // Initialize fairness ledger and workload tracker
     const fairnessLedger = this.initializeFairnessLedger(radiologists, shiftInstances)
@@ -529,7 +532,7 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
       radiologists,
       shiftTypes,
       shiftInstances,
-      vacationPreferences,
+      vacationPreferences: processedPreferences,
       existingAssignments: [], // Start with empty assignments
       fairnessLedger,
       workloadTracker,
@@ -680,6 +683,114 @@ export class EnterpriseScheduleGenerator implements ScheduleGeneratorInterface {
       weekEndDate: pref.weekEndDate,
       status: pref.status as 'PENDING' | 'APPROVED' | 'REJECTED'
     }))
+  }
+
+  private async optimizeVacationPreferences(
+    preferences: VacationPreferenceData[], 
+    radiologists: RadiologistProfile[]
+  ): Promise<VacationPreferenceData[]> {
+    this.logAudit('VACATION_PROCESSING', 'Processing vacation preferences', {
+      totalPreferences: preferences.length,
+      pendingCount: preferences.filter(p => p.status === 'PENDING').length
+    })
+
+    // Only process PENDING preferences
+    const pendingPreferences = preferences.filter(pref => pref.status === 'PENDING')
+    const processedPreferences: VacationPreferenceData[] = [...preferences.filter(pref => pref.status !== 'PENDING')]
+
+    // Group preferences by week to check capacity
+    const weekCapacity = new Map<string, { total: number; approved: number }>()
+    
+    // Calculate max approvals per week (e.g., 30% of radiologists can be on vacation per week)
+    const maxApprovalRatePerWeek = 0.30
+    const maxApprovalsPerWeek = Math.floor(radiologists.length * maxApprovalRatePerWeek)
+
+    // Initialize week capacity tracking
+    for (const pref of pendingPreferences) {
+      const weekKey = `${pref.year}-${pref.month}-${pref.weekNumber}`
+      if (!weekCapacity.has(weekKey)) {
+        weekCapacity.set(weekKey, { total: 0, approved: 0 })
+      }
+      weekCapacity.get(weekKey)!.total++
+    }
+
+    // Create fairness scoring for preference ranking
+    const userFairnessScores = new Map<string, number>()
+    for (const radiologist of radiologists) {
+      // Initialize fairness score (could be enhanced with historical data)
+      userFairnessScores.set(radiologist.id, 0)
+    }
+
+    // Sort preferences for processing (P1 first, then by fairness)
+    const sortedPreferences = pendingPreferences.sort((a, b) => {
+      // First priority: rank (P1 > P2 > P3)
+      if (a.rank !== b.rank) {
+        return a.rank - b.rank
+      }
+      
+      // Second priority: fairness score (higher fairness debt gets preference)
+      const aScore = userFairnessScores.get(a.userId) || 0
+      const bScore = userFairnessScores.get(b.userId) || 0
+      return bScore - aScore // Higher score first
+    })
+
+    // Process preferences in priority order
+    for (const pref of sortedPreferences) {
+      const weekKey = `${pref.year}-${pref.month}-${pref.weekNumber}`
+      const weekData = weekCapacity.get(weekKey)!
+      
+      if (weekData.approved < maxApprovalsPerWeek) {
+        // Approve this preference
+        processedPreferences.push({
+          ...pref,
+          status: 'APPROVED'
+        })
+        weekData.approved++
+        
+        // Update user's fairness score (they got vacation, reduce their debt)
+        const currentScore = userFairnessScores.get(pref.userId) || 0
+        userFairnessScores.set(pref.userId, currentScore - (4 - pref.rank)) // P1 = -3, P2 = -2, P3 = -1
+      } else {
+        // Reject this preference
+        processedPreferences.push({
+          ...pref,
+          status: 'REJECTED'
+        })
+        
+        // Update user's fairness score (they were denied, increase their debt)
+        const currentScore = userFairnessScores.get(pref.userId) || 0
+        userFairnessScores.set(pref.userId, currentScore + 2) // Denial penalty
+      }
+    }
+
+    // Persist the changes to database
+    const updates: Array<Promise<unknown>> = []
+    for (const pref of processedPreferences.filter(p => p.status !== 'PENDING')) {
+      if (preferences.find(orig => orig.id === pref.id && orig.status === 'PENDING')) {
+        updates.push(
+          prisma.vacationPreference.update({
+            where: { id: pref.id },
+            data: { status: pref.status }
+          })
+        )
+      }
+    }
+    
+    if (updates.length > 0) {
+      await Promise.all(updates)
+    }
+
+    const approvedCount = processedPreferences.filter(p => p.status === 'APPROVED').length
+    const rejectedCount = processedPreferences.filter(p => p.status === 'REJECTED').length
+
+    this.logAudit('VACATION_PROCESSING', 'Vacation preference processing completed', {
+      totalProcessed: processedPreferences.length,
+      approved: approvedCount,
+      rejected: rejectedCount,
+      approvalRate: (approvedCount / (approvedCount + rejectedCount)) * 100
+    })
+
+    return processedPreferences
   }
 
   private buildVacationBlocks(preferences: VacationPreferenceData[]): VacationBlockMap {
