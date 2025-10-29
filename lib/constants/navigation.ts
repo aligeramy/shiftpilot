@@ -7,6 +7,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  Sparkles,
 } from "lucide-react"
 import { ShiftPilotLogo } from "@/components/ui/shiftpilot-logo"
 
@@ -96,6 +97,23 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
           title: "Onboarding Setup",
           url: "/onboarding",
           description: "Organization setup and configuration",
+        },
+      ],
+    },
+    {
+      title: "Demo",
+      url: "/demo/organization",
+      icon: Sparkles,
+      items: [
+        {
+          title: "Org Onboarding Preview",
+          url: "/demo/organization",
+          description: "Beautiful first-time setup with visual constraint builder",
+        },
+        {
+          title: "Radiologist Experience",
+          url: "/demo/radiologist",
+          description: "See schedules, vacations, swaps, and fairness points in context",
         },
       ],
     },
